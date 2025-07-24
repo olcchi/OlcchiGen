@@ -8,7 +8,7 @@ import { Slider } from '@/components/ui/slider'
  */
 export default function ThermalMotionPage() {
   const containerRef = useRef<HTMLDivElement>(null)
-  const p5InstanceRef = useRef<any>(null)
+  const p5InstanceRef = useRef<import('p5') | null>(null)
   const [temperature, setTemperature] = useState([50]) // Temperature control state
   const temperatureRef = useRef(temperature) // Ref to access current temperature in p5 sketch
 
@@ -24,8 +24,8 @@ export default function ThermalMotionPage() {
 
       if (!containerRef.current) return
 
-      const sketch = (p: any) => {
-        let particles: any[] = []
+      const sketch = (p: import('p5')) => {
+        let particles: Particle[] = []
         let time = 0
 
         class Particle {
@@ -147,7 +147,7 @@ export default function ThermalMotionPage() {
   return (
     <>
       <h1 className="text-sm font-mono font-bold mb-4">Thermal Motion</h1>
-      <div className="w-80 h-80 xl:w-120 xl:h-120 border border-black">
+      <div className="w-80 h-80 xl:w-100 xl:h-100 border border-black">
         <div ref={containerRef} className="w-full h-full" />
       </div>
       <div className='flex flex-col items-center gap-2'>
