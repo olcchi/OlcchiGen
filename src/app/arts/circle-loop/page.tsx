@@ -7,7 +7,7 @@ import { useEffect, useRef } from 'react'
  */
 export default function CircleLoopPage() {
   const containerRef = useRef<HTMLDivElement>(null)
-  const p5InstanceRef = useRef<any>(null)
+  const p5InstanceRef = useRef<import('p5') | null>(null)
 
   useEffect(() => {
     // Dynamically import p5.js to avoid SSR issues
@@ -16,12 +16,12 @@ export default function CircleLoopPage() {
 
       if (!containerRef.current) return
 
-      const sketch = (p: any) => {
+      const sketch = (p: import('p5')) => {
         let targetRotationY = 0
         let currentRotationY = 0
         let targetRotationX = 0
         let currentRotationX = 0
-        let animationSpeed = 0.05
+        const animationSpeed = 0.05
         let radius = 150 // Will be updated in setup based on canvas size
 
         // Function to draw a smooth circle using many line segments
@@ -119,7 +119,7 @@ export default function CircleLoopPage() {
   return (
     <>
       <h1 className="text-sm font-mono font-bold mb-4">Circle Loop</h1>
-      <div className="w-80 h-80 xl:w-120 xl:h-120 border border-black">
+      <div className="w-80 h-80 xl:w-100 xl:h-100 border border-black">
         <div ref={containerRef} className="w-full h-full" />
       </div>
       <div className='flex flex-col items-center gap-2'>
