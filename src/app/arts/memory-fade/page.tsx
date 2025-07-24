@@ -45,12 +45,12 @@ export default function MemoryFadePage() {
         let floatingChars: Character[] = [];
         
         let isFloating = false;
-        let floatQueue: number[] = []; // 待飞走的字符索引队列
+        let floatQueue: number[] = []; // Queue of character indices waiting to float away
         let lastFloatTime = 0;
-        let floatCount = 0; // 已经飞走的批次计数
-        let allFloatedTime = 0; // 所有字符飞走的时间
-        let isResetting = false; // 是否正在重置
-        let resetQueue: number[] = []; // 重置时字符出现的队列
+        let floatCount = 0; // Count of batches that have floated away
+        let allFloatedTime = 0; // Time when all characters have floated away
+        let isResetting = false; // Whether currently resetting
+        let resetQueue: number[] = []; // Queue for character appearance during reset
         let lastResetTime = 0;
 
         // Matter.js physics engine
@@ -74,11 +74,11 @@ export default function MemoryFadePage() {
           // Create physics engine with no gravity
           engine = Engine.create();
           world = engine.world;
-          engine.world.gravity.y = 0; // 无重力，只有风力
+          engine.world.gravity.y = 0; // No gravity, only wind force
 
           p.textFont("monospace");
           p.textSize(16);
-          p.textAlign(p.LEFT, p.BASELINE); // 文字左对齐
+          p.textAlign(p.LEFT, p.BASELINE); // Left-align text
 
           // Initialize characters with positions
           initializeCharacters();
@@ -126,7 +126,7 @@ export default function MemoryFadePage() {
           // Calculate starting position for vertical centering, left alignment
           const totalHeight = lines.length * lineHeight;
           const startY = (p.height - totalHeight) / 2 + lineHeight;
-          const leftMargin = 20; // 左边距
+          const leftMargin = 20; // Left margin
 
           let charIndex = 0;
           for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
@@ -134,7 +134,7 @@ export default function MemoryFadePage() {
 
             for (let i = 0; i < line.length; i++) {
               const char = line[i];
-              const x = leftMargin + i * charWidth; // 左对齐
+              const x = leftMargin + i * charWidth; // Left-aligned
               const y = startY + lineIndex * lineHeight;
 
               characters.push({
@@ -144,12 +144,12 @@ export default function MemoryFadePage() {
                 x: x,
                 y: y,
                 isFloating: false,
-                isVisible: true, // 字符是否可见
-                isFadingIn: false, // 是否正在渐入
-                fadeInStartTime: 0, // 渐入开始时间
+                isVisible: true, // Whether character is visible
+                isFadingIn: false, // Whether currently fading in
+                fadeInStartTime: 0, // Fade-in start time
                 alpha: 255,
                 index: charIndex,
-                body: null, // Matter.js body will be created when falling starts
+                body: null, // Matter.js body will be created when floating starts
               });
 
               charIndex++;
@@ -158,7 +158,7 @@ export default function MemoryFadePage() {
         };
 
         const startFloating = (clickedIndex: number) => {
-          // 找到"回忆"两个字的索引
+          // Find indices of the characters "回忆" (memory)
           const memoryIndices: number[] = [];
           for (let i = 0; i < characters.length; i++) {
             if (characters[i].char === "回" || characters[i].char === "忆") {
@@ -166,7 +166,7 @@ export default function MemoryFadePage() {
             }
           }
 
-          // 从点击的字符开始，创建所有未飞走字符的队列（除了"回忆"）
+          // Create queue of all non-floating characters (except "回忆")
           floatQueue = [];
           for (let i = 0; i < characters.length; i++) {
             if (!characters[i].isFloating && !memoryIndices.includes(i)) {
@@ -174,13 +174,13 @@ export default function MemoryFadePage() {
             }
           }
 
-          // 打乱队列，让飞走顺序随机
+          // Shuffle queue to randomize floating order
           for (let i = floatQueue.length - 1; i > 0; i--) {
             const j = Math.floor(p.random() * (i + 1));
             [floatQueue[i], floatQueue[j]] = [floatQueue[j], floatQueue[i]];
           }
 
-          // 确保点击的字符第一个飞走（如果不是"回忆"）
+          // Ensure clicked character floats first (if not "回忆")
           if (!memoryIndices.includes(clickedIndex)) {
             const clickedPos = floatQueue.indexOf(clickedIndex);
             if (clickedPos > 0) {
@@ -189,14 +189,14 @@ export default function MemoryFadePage() {
             }
           }
 
-          // 将"回忆"添加到队列最后
+          // Add "回忆" to the end of queue
           floatQueue.push(...memoryIndices);
 
           // floatStartTime = p.millis() // Removed unused assignment
           lastFloatTime = p.millis();
           isFloating = true;
 
-          // 立即让第一个字符开始飞走
+          // Immediately start floating the first character
           if (floatQueue.length > 0) {
             triggerCharacterFloat(floatQueue[0]);
             floatQueue.shift();
@@ -209,28 +209,28 @@ export default function MemoryFadePage() {
 
           char.isFloating = true;
 
-          // 创建Matter.js物理体，用于风吹效果
+          // Create Matter.js physics body for wind effects
           char.body = Bodies.rectangle(char.x, char.y, charWidth, charHeight, {
-            restitution: 0, // 无弹性
-            friction: 0, // 无摩擦力，让文字更容易飘动
-            frictionAir: 0.1, // 增加空气阻力，让移动更缓慢
-            density: 0.0001, // 很轻的密度，容易被风吹动
+            restitution: 0, // No elasticity
+            friction: 0, // No friction, makes text easier to drift
+            frictionAir: 0.1, // Increase air resistance for slower movement
+            density: 0.0001, // Very light density, easily blown by wind
           });
 
-          // 主要向右飞行，带一点随机性
-          const rightwardBias = p.random(0.6, 1.0); // 向右的倾向
-          const verticalVariation = p.random(-0.3, 0.3); // 垂直方向的变化
+          // Mainly fly rightward with some randomness
+          const rightwardBias = p.random(0.6, 1.0); // Rightward tendency
+          const verticalVariation = p.random(-0.3, 0.3); // Vertical variation
           char.windDirection = Math.atan2(verticalVariation, rightwardBias);
           char.windStrength = p.random(0.8, 1.2);
           char.floatStartTime = p.millis();
 
           World.add(world, char.body);
           floatingChars.push(char);
-          char.isVisible = false; // 飞走时隐藏原位置的字符
+          char.isVisible = false; // Hide character at original position when floating
         };
 
         const startReset = () => {
-          // 清理所有飞走的字符
+          // Clean up all floating characters
           for (const char of floatingChars) {
             if (char.body) {
               World.remove(world, char.body);
@@ -239,13 +239,13 @@ export default function MemoryFadePage() {
           }
           floatingChars = [];
 
-          // 创建重置队列，包含所有字符
+          // Create reset queue containing all characters
           resetQueue = [];
           for (let i = 0; i < characters.length; i++) {
             resetQueue.push(i);
           }
 
-          // 打乱重置顺序
+          // Shuffle reset order
           for (let i = resetQueue.length - 1; i > 0; i--) {
             const j = Math.floor(p.random() * (i + 1));
             [resetQueue[i], resetQueue[j]] = [resetQueue[j], resetQueue[i]];
@@ -259,12 +259,12 @@ export default function MemoryFadePage() {
           const char = characters[charIndex];
           if (!char) return;
 
-          // 重置字符状态，开始渐入动画
+          // Reset character state and start fade-in animation
           char.isFloating = false;
           char.isVisible = true;
           char.isFadingIn = true;
           char.fadeInStartTime = p.millis();
-          char.alpha = 0; // 从完全透明开始
+          char.alpha = 0; // Start from completely transparent
           char.x = char.originalX;
           char.y = char.originalY;
 
@@ -279,12 +279,12 @@ export default function MemoryFadePage() {
           p.fill(0);
           p.noStroke();
 
-          // 随机触发字符飞走
+          // Randomly trigger character floating
           if (isFloating && floatQueue.length > 0) {
             const currentTime = p.millis();
             const timeSinceLastFloat = currentTime - lastFloatTime;
 
-            // 检查是否只剩下"回忆"两个字
+            // Check if only "回忆" characters remain
             const remainingNonMemoryChars = floatQueue.filter((index) => {
               const char = characters[index].char;
               return char !== "回" && char !== "忆";
@@ -294,17 +294,17 @@ export default function MemoryFadePage() {
             let numToFloat: number;
 
             if (remainingNonMemoryChars.length === 0) {
-              // 只剩下"回忆"时，等待更长时间再让它们飞走
-              nextFloatDelay = 3000; // 3秒延迟
-              numToFloat = Math.min(floatQueue.length, 2); // 一次飞走两个
+              // When only "回忆" remains, wait longer before letting them float
+              nextFloatDelay = 3000; // 3 second delay
+              numToFloat = Math.min(floatQueue.length, 2); // Float two at once
             } else {
-              // 正常情况：随机间隔和数量，随时间递增
+              // Normal case: random intervals and quantities, increasing over time
               nextFloatDelay = p.random(500, 2000);
               const baseCount = 2;
               const progressiveCount = Math.min(
                 13,
                 Math.floor(floatCount * 0.8)
-              ); // 随时间增加，最多13个
+              ); // Increase over time, maximum 13
               numToFloat = Math.min(
                 remainingNonMemoryChars.length,
                 baseCount + progressiveCount
@@ -323,33 +323,33 @@ export default function MemoryFadePage() {
               lastFloatTime = currentTime;
             }
 
-            // 如果队列空了，记录所有字符飞走的时间
+            // If queue is empty, record the time when all characters floated away
             if (floatQueue.length === 0) {
               isFloating = false;
               allFloatedTime = p.millis();
             }
           }
 
-          // 检查是否需要开始重置
+          // Check if reset needs to start
           if (!isFloating && !isResetting && allFloatedTime > 0) {
             const timeSinceAllFloated = p.millis() - allFloatedTime;
             if (timeSinceAllFloated > 2000) {
-              // 2秒后开始重置
+              // Start reset after 2 seconds
               startReset();
             }
           }
 
-          // 处理重置过程
+          // Handle reset process
           if (isResetting && resetQueue.length > 0) {
             const currentTime = p.millis();
             const timeSinceLastReset = currentTime - lastResetTime;
 
             if (timeSinceLastReset > p.random(50, 200)) {
-              // 随机间隔50-200毫秒
+              // Random interval 50-200ms
               const numToReset = Math.min(
                 resetQueue.length,
                 Math.floor(p.random(1, 4))
-              ); // 1-3个字符
+              ); // 1-3 characters
 
               for (let i = 0; i < numToReset; i++) {
                 if (resetQueue.length > 0) {
@@ -365,7 +365,7 @@ export default function MemoryFadePage() {
 
             if (resetQueue.length === 0) {
               isResetting = false;
-              // 重置完成后，清理所有状态，回到初始状态
+              // After reset completion, clean all states and return to initial state
               floatCount = 0;
               allFloatedTime = 0;
               lastFloatTime = 0;
@@ -374,28 +374,28 @@ export default function MemoryFadePage() {
 
           // Apply gentle wind effects to floating characters
           for (const char of floatingChars) {
-            if (char.body && char.floatStartTime !== undefined && char.windDirection !== undefined && char.windStrength !== undefined) {
+            if (char.body && char.floatStartTime !== undefined) {
               const elapsed = p.millis() - char.floatStartTime;
 
-              // 基础风力 - 主要向右，轻微向上或向下
+              // Base wind force - mainly rightward, slightly up or down
               const baseWindForce = 0.00003;
 
-              // 每个字符有自己的风向和强度（主要向右）
+              // Each character has its own wind direction and strength (mainly rightward)
               const personalWindX =
-                Math.cos(char.windDirection) *
+                Math.cos(char.windDirection ?? 0) *
                 baseWindForce *
-                char.windStrength;
+                (char.windStrength ?? 1);
               const personalWindY =
-                Math.sin(char.windDirection) *
+                Math.sin(char.windDirection ?? 0) *
                 baseWindForce *
-                char.windStrength *
-                0.5; // 垂直方向减半
+                (char.windStrength ?? 1) *
+                0.5; // Vertical direction halved
 
-              // 轻微的全局风力变化
+              // Slight global wind force variation
               const globalWindX = p.sin(p.millis() * 0.001) * 0.000005;
               const globalWindY = p.cos(p.millis() * 0.0008) * 0.000003;
 
-              // 很小的随机扰动
+              // Very small random perturbation
               const randomWindX =
                 (p.noise(char.index * 0.1, p.millis() * 0.0002) - 0.5) *
                 0.000002;
@@ -403,20 +403,20 @@ export default function MemoryFadePage() {
                 (p.noise(char.index * 0.1 + 100, p.millis() * 0.0002) - 0.5) *
                 0.000002;
 
-              // 总风力 - 主要向右飘
+              // Total wind force - mainly drifting rightward
               const totalWindX = personalWindX + globalWindX + randomWindX;
               const totalWindY = personalWindY + globalWindY + randomWindY;
 
-              // 施加风力
+              // Apply wind force
               Body.applyForce(char.body, char.body.position, {
                 x: totalWindX,
                 y: totalWindY,
               });
 
-              // 缓慢淡出效果
+              // Slow fade-out effect
               if (elapsed > 1500) {
-                // 1.5秒后开始淡出
-                const fadeProgress = Math.min(1, (elapsed - 1500) / 6000); // 6秒内完全淡出
+                // Start fading after 1.5 seconds
+                const fadeProgress = Math.min(1, (elapsed - 1500) / 6000); // Complete fade-out in 6 seconds
                 char.alpha = 255 * (1 - fadeProgress);
               }
             }
@@ -428,7 +428,7 @@ export default function MemoryFadePage() {
           // Update and draw floating characters
           for (const char of floatingChars) {
             if (char.body) {
-              // 更新字符位置为物理体位置
+              // Update character position to physics body position
               char.x = char.body.position.x;
               char.y = char.body.position.y;
             }
@@ -440,29 +440,29 @@ export default function MemoryFadePage() {
           // Update fade-in animations and draw static characters
           for (const char of characters) {
             if (!char.isFloating && char.isVisible) {
-              // 处理渐入动画
+              // Handle fade-in animation
               if (char.isFadingIn) {
                 const elapsed = p.millis() - char.fadeInStartTime;
-                const fadeInDuration = 800; // 800毫秒渐入时间
+                const fadeInDuration = 800; // 800ms fade-in duration
 
                 if (elapsed < fadeInDuration) {
-                  // 使用缓动函数让渐入更自然
+                  // Use easing function for more natural fade-in
                   const progress = elapsed / fadeInDuration;
                   const easedProgress = 1 - Math.pow(1 - progress, 3); // easeOutCubic
                   char.alpha = 255 * easedProgress;
                 } else {
-                  // 渐入完成，恢复到初始状态
+                  // Fade-in complete, restore to initial state
                   char.alpha = 255;
                   char.isFadingIn = false;
                   char.fadeInStartTime = 0;
                 }
               }
 
-              // 只有在非渐入状态或渐入完成时才绘制稳定的文字
+              // Only draw stable text when not fading in or fade-in is complete
               if (!char.isFadingIn) {
-                p.fill(0, 255); // 完全不透明
+                p.fill(0, 255); // Completely opaque
               } else {
-                p.fill(0, char.alpha); // 渐入过程中使用动态透明度
+                p.fill(0, char.alpha); // Use dynamic transparency during fade-in
               }
               p.text(char.char, char.x, char.y);
             }
@@ -472,7 +472,7 @@ export default function MemoryFadePage() {
         };
 
         p.mousePressed = () => {
-          // 只有在非重置状态下才能点击
+          // Only allow clicks when not in reset state
           if (isResetting) return;
 
           // Find any character to trigger floating
@@ -530,7 +530,7 @@ export default function MemoryFadePage() {
       </div>
       <div className="flex flex-col items-center gap-2">
         <p className="text-xs font-mono text-gray-600 max-w-md text-center">
-          点击文字让记忆开始消散 / Click on text to start memory fade
+Click on text to start memory fade / 点击文字让记忆开始消散
         </p>
       </div>
     </>
