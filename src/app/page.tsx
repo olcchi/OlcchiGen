@@ -1,22 +1,27 @@
 import * as React from "react"
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator"
+import { ArtList } from "@/components/art-list"
 export default function Home() {
-  const tags = Array.from({ length: 50 }).map(
-    (_, i, a) => `HALO.${a.length - i}`
-  )
+  const arts = [
+    {
+      id: 1,
+      name: "Thermal motion",
+      url: "arts/thermal-motion",
+    },
+    {
+      id: 2,
+      name: "Circle Loop",
+      url: "arts/circle-loop",
+    },
+    {
+      id: 3,
+      name: "Memory Fade",
+      url: "arts/memory-fade",
+    },
+  ]
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <ScrollArea className="h-72 px-3 w-48 font-mono! rounded-md border custom-scrollbar!">
-          {tags.map((tag) => (
-            <React.Fragment key={tag}>
-              <div className="text-sm">{tag}</div>
-              <Separator className="my-1" />
-            </React.Fragment>
-          ))}
-        </ScrollArea>
-
+    <div className="font-sans h-[100dvh] flex items-center justify-center bg-white p-8">
+      <main className="">
+        <ArtList arts={arts} />
       </main>
     </div>
   );
