@@ -15,9 +15,9 @@ interface Character {
   alpha: number;
   index: number;
   body: Matter.Body | null;
-  windDirection?: number;
-  windStrength?: number;
-  floatStartTime?: number;
+  windDirection: number;
+  windStrength: number;
+  floatStartTime: number;
 }
 
 /**
@@ -38,6 +38,37 @@ export default function MemoryFadePage() {
       if (!containerRef.current) return;
 
       const sketch = (p: import('p5')) => {
+        // Constants
+        const PHYSICS_CONSTANTS = {
+          BASE_WIND_FORCE: 0.00003,
+          GLOBAL_WIND_VARIATION: 0.000005,
+          RANDOM_WIND_VARIATION: 0.000002,
+          FRICTION_AIR: 0.1,
+          DENSITY: 0.0001,
+        } as const;
+
+        const TIMING_CONSTANTS = {
+          FADE_START_DELAY: 1500,
+          FADE_DURATION: 6000,
+          FADE_IN_DURATION: 800,
+          RESET_DELAY: 2000,
+          MEMORY_FLOAT_DELAY: 3000,
+          MIN_FLOAT_INTERVAL: 500,
+          MAX_FLOAT_INTERVAL: 2000,
+          MIN_RESET_INTERVAL: 50,
+          MAX_RESET_INTERVAL: 200,
+        } as const;
+
+        const WIND_CONSTANTS = {
+          MIN_RIGHTWARD_BIAS: 0.6,
+          MAX_RIGHTWARD_BIAS: 1.0,
+          MIN_VERTICAL_VARIATION: -0.3,
+          MAX_VERTICAL_VARIATION: 0.3,
+          MIN_WIND_STRENGTH: 0.8,
+          MAX_WIND_STRENGTH: 1.2,
+          VERTICAL_REDUCTION_FACTOR: 0.5,
+        } as const;
+
         // Text content
         const text =
           "因为不知死何时将至，我们仍将生命视为无穷无尽、取之不竭的源泉。然而，一生所遇之事也许就只发生那么几次。曾经左右过我们人生的童年回忆浮现在心头的时刻还能有多少次呢？也许还能有四五次。目睹满月升起的时刻又还能有多少次呢？或许最多还能有二十次。但人们总是深信这些机会将无穷无尽。";
@@ -62,6 +93,24 @@ export default function MemoryFadePage() {
         const charWidth = 16;
         const charHeight = 16;
 
+        // Utility functions
+        const shuffleArray = (array: number[]): void => {
+          for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(p.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+          }
+        };
+
+        const findMemoryCharacterIndices = (): number[] => {
+          const memoryIndices: number[] = [];
+          for (let i = 0; i < characters.length; i++) {
+            if (characters[i].char === "回" || characters[i].char === "忆") {
+              memoryIndices.push(i);
+            }
+          }
+          return memoryIndices;
+        };
+
         p.setup = () => {
           const container = containerRef.current;
           if (container) {
@@ -76,8 +125,8 @@ export default function MemoryFadePage() {
           world = engine.world;
           engine.world.gravity.y = 0; // No gravity, only wind force
 
-          p.textFont("monospace");
-          p.textSize(16);
+          p.textFont("sans");
+          p.textSize(13);
           p.textAlign(p.LEFT, p.BASELINE); // Left-align text
 
           // Initialize characters with positions
@@ -150,6 +199,9 @@ export default function MemoryFadePage() {
                 alpha: 255,
                 index: charIndex,
                 body: null, // Matter.js body will be created when floating starts
+                windDirection: 0, // Will be set when floating starts
+                windStrength: 1, // Will be set when floating starts
+                floatStartTime: 0, // Will be set when floating starts
               });
 
               charIndex++;
@@ -159,12 +211,7 @@ export default function MemoryFadePage() {
 
         const startFloating = (clickedIndex: number) => {
           // Find indices of the characters "回忆" (memory)
-          const memoryIndices: number[] = [];
-          for (let i = 0; i < characters.length; i++) {
-            if (characters[i].char === "回" || characters[i].char === "忆") {
-              memoryIndices.push(i);
-            }
-          }
+          const memoryIndices = findMemoryCharacterIndices();
 
           // Create queue of all non-floating characters (except "回忆")
           floatQueue = [];
@@ -175,10 +222,7 @@ export default function MemoryFadePage() {
           }
 
           // Shuffle queue to randomize floating order
-          for (let i = floatQueue.length - 1; i > 0; i--) {
-            const j = Math.floor(p.random() * (i + 1));
-            [floatQueue[i], floatQueue[j]] = [floatQueue[j], floatQueue[i]];
-          }
+          shuffleArray(floatQueue);
 
           // Ensure clicked character floats first (if not "回忆")
           if (!memoryIndices.includes(clickedIndex)) {
@@ -192,7 +236,6 @@ export default function MemoryFadePage() {
           // Add "回忆" to the end of queue
           floatQueue.push(...memoryIndices);
 
-          // floatStartTime = p.millis() // Removed unused assignment
           lastFloatTime = p.millis();
           isFloating = true;
 
@@ -213,15 +256,15 @@ export default function MemoryFadePage() {
           char.body = Bodies.rectangle(char.x, char.y, charWidth, charHeight, {
             restitution: 0, // No elasticity
             friction: 0, // No friction, makes text easier to drift
-            frictionAir: 0.1, // Increase air resistance for slower movement
-            density: 0.0001, // Very light density, easily blown by wind
+            frictionAir: PHYSICS_CONSTANTS.FRICTION_AIR, // Increase air resistance for slower movement
+            density: PHYSICS_CONSTANTS.DENSITY, // Very light density, easily blown by wind
           });
 
           // Mainly fly rightward with some randomness
-          const rightwardBias = p.random(0.6, 1.0); // Rightward tendency
-          const verticalVariation = p.random(-0.3, 0.3); // Vertical variation
+          const rightwardBias = p.random(WIND_CONSTANTS.MIN_RIGHTWARD_BIAS, WIND_CONSTANTS.MAX_RIGHTWARD_BIAS); // Rightward tendency
+          const verticalVariation = p.random(WIND_CONSTANTS.MIN_VERTICAL_VARIATION, WIND_CONSTANTS.MAX_VERTICAL_VARIATION); // Vertical variation
           char.windDirection = Math.atan2(verticalVariation, rightwardBias);
-          char.windStrength = p.random(0.8, 1.2);
+          char.windStrength = p.random(WIND_CONSTANTS.MIN_WIND_STRENGTH, WIND_CONSTANTS.MAX_WIND_STRENGTH);
           char.floatStartTime = p.millis();
 
           World.add(world, char.body);
@@ -246,10 +289,7 @@ export default function MemoryFadePage() {
           }
 
           // Shuffle reset order
-          for (let i = resetQueue.length - 1; i > 0; i--) {
-            const j = Math.floor(p.random() * (i + 1));
-            [resetQueue[i], resetQueue[j]] = [resetQueue[j], resetQueue[i]];
-          }
+          shuffleArray(resetQueue);
 
           isResetting = true;
           lastResetTime = p.millis();
@@ -274,78 +314,71 @@ export default function MemoryFadePage() {
           }
         };
 
-        p.draw = () => {
-          p.background(255);
-          p.fill(0);
-          p.noStroke();
+        const processFloatingQueue = (currentTime: number) => {
+          if (!isFloating || floatQueue.length === 0) return;
 
-          // Randomly trigger character floating
-          if (isFloating && floatQueue.length > 0) {
-            const currentTime = p.millis();
-            const timeSinceLastFloat = currentTime - lastFloatTime;
+          const timeSinceLastFloat = currentTime - lastFloatTime;
 
-            // Check if only "回忆" characters remain
-            const remainingNonMemoryChars = floatQueue.filter((index) => {
-              const char = characters[index].char;
-              return char !== "回" && char !== "忆";
-            });
+          // Check if only "回忆" characters remain
+          const remainingNonMemoryChars = floatQueue.filter((index) => {
+            const char = characters[index].char;
+            return char !== "回" && char !== "忆";
+          });
 
-            let nextFloatDelay: number;
-            let numToFloat: number;
+          let nextFloatDelay: number;
+          let numToFloat: number;
 
-            if (remainingNonMemoryChars.length === 0) {
-              // When only "回忆" remains, wait longer before letting them float
-              nextFloatDelay = 3000; // 3 second delay
-              numToFloat = Math.min(floatQueue.length, 2); // Float two at once
-            } else {
-              // Normal case: random intervals and quantities, increasing over time
-              nextFloatDelay = p.random(500, 2000);
-              const baseCount = 2;
-              const progressiveCount = Math.min(
-                13,
-                Math.floor(floatCount * 0.8)
-              ); // Increase over time, maximum 13
-              numToFloat = Math.min(
-                remainingNonMemoryChars.length,
-                baseCount + progressiveCount
-              );
-            }
-
-            if (timeSinceLastFloat > nextFloatDelay) {
-              for (let i = 0; i < numToFloat; i++) {
-                if (floatQueue.length > 0) {
-                  triggerCharacterFloat(floatQueue[0]);
-                  floatQueue.shift();
-                }
-              }
-
-              floatCount++;
-              lastFloatTime = currentTime;
-            }
-
-            // If queue is empty, record the time when all characters floated away
-            if (floatQueue.length === 0) {
-              isFloating = false;
-              allFloatedTime = p.millis();
-            }
+          if (remainingNonMemoryChars.length === 0) {
+            // When only "回忆" remains, wait longer before letting them float
+            nextFloatDelay = TIMING_CONSTANTS.MEMORY_FLOAT_DELAY;
+            numToFloat = Math.min(floatQueue.length, 2); // Float two at once
+          } else {
+            // Normal case: random intervals and quantities, increasing over time
+            nextFloatDelay = p.random(TIMING_CONSTANTS.MIN_FLOAT_INTERVAL, TIMING_CONSTANTS.MAX_FLOAT_INTERVAL);
+            const baseCount = 2;
+            const progressiveCount = Math.min(
+              13,
+              Math.floor(floatCount * 0.8)
+            ); // Increase over time, maximum 13
+            numToFloat = Math.min(
+              remainingNonMemoryChars.length,
+              baseCount + progressiveCount
+            );
           }
 
+          if (timeSinceLastFloat > nextFloatDelay) {
+            for (let i = 0; i < numToFloat; i++) {
+              if (floatQueue.length > 0) {
+                triggerCharacterFloat(floatQueue[0]);
+                floatQueue.shift();
+              }
+            }
+
+            floatCount++;
+            lastFloatTime = currentTime;
+          }
+
+          // If queue is empty, record the time when all characters floated away
+          if (floatQueue.length === 0) {
+            isFloating = false;
+            allFloatedTime = currentTime;
+          }
+        };
+
+        const processReset = (currentTime: number) => {
           // Check if reset needs to start
           if (!isFloating && !isResetting && allFloatedTime > 0) {
-            const timeSinceAllFloated = p.millis() - allFloatedTime;
-            if (timeSinceAllFloated > 2000) {
-              // Start reset after 2 seconds
+            const timeSinceAllFloated = currentTime - allFloatedTime;
+            if (timeSinceAllFloated > TIMING_CONSTANTS.RESET_DELAY) {
               startReset();
             }
           }
 
           // Handle reset process
           if (isResetting && resetQueue.length > 0) {
-            const currentTime = p.millis();
             const timeSinceLastReset = currentTime - lastResetTime;
 
-            if (timeSinceLastReset > p.random(50, 200)) {
-              // Random interval 50-200ms
+            if (timeSinceLastReset > p.random(TIMING_CONSTANTS.MIN_RESET_INTERVAL, TIMING_CONSTANTS.MAX_RESET_INTERVAL)) {
               const numToReset = Math.min(
                 resetQueue.length,
                 Math.floor(p.random(1, 4))
@@ -371,37 +404,35 @@ export default function MemoryFadePage() {
               lastFloatTime = 0;
             }
           }
+        };
 
-          // Apply gentle wind effects to floating characters
+        const applyWindEffects = (currentTime: number) => {
           for (const char of floatingChars) {
-            if (char.body && char.floatStartTime !== undefined) {
-              const elapsed = p.millis() - char.floatStartTime;
-
-              // Base wind force - mainly rightward, slightly up or down
-              const baseWindForce = 0.00003;
+            if (char.body && char.floatStartTime > 0) {
+              const elapsed = currentTime - char.floatStartTime;
 
               // Each character has its own wind direction and strength (mainly rightward)
               const personalWindX =
-                Math.cos(char.windDirection ?? 0) *
-                baseWindForce *
-                (char.windStrength ?? 1);
+                Math.cos(char.windDirection) *
+                PHYSICS_CONSTANTS.BASE_WIND_FORCE *
+                char.windStrength;
               const personalWindY =
-                Math.sin(char.windDirection ?? 0) *
-                baseWindForce *
-                (char.windStrength ?? 1) *
-                0.5; // Vertical direction halved
+                Math.sin(char.windDirection) *
+                PHYSICS_CONSTANTS.BASE_WIND_FORCE *
+                char.windStrength *
+                WIND_CONSTANTS.VERTICAL_REDUCTION_FACTOR; // Vertical direction halved
 
               // Slight global wind force variation
-              const globalWindX = p.sin(p.millis() * 0.001) * 0.000005;
-              const globalWindY = p.cos(p.millis() * 0.0008) * 0.000003;
+              const globalWindX = p.sin(currentTime * 0.001) * PHYSICS_CONSTANTS.GLOBAL_WIND_VARIATION;
+              const globalWindY = p.cos(currentTime * 0.0008) * PHYSICS_CONSTANTS.GLOBAL_WIND_VARIATION * 0.6;
 
               // Very small random perturbation
               const randomWindX =
-                (p.noise(char.index * 0.1, p.millis() * 0.0002) - 0.5) *
-                0.000002;
+                (p.noise(char.index * 0.1, currentTime * 0.0002) - 0.5) *
+                PHYSICS_CONSTANTS.RANDOM_WIND_VARIATION;
               const randomWindY =
-                (p.noise(char.index * 0.1 + 100, p.millis() * 0.0002) - 0.5) *
-                0.000002;
+                (p.noise(char.index * 0.1 + 100, currentTime * 0.0002) - 0.5) *
+                PHYSICS_CONSTANTS.RANDOM_WIND_VARIATION;
 
               // Total wind force - mainly drifting rightward
               const totalWindX = personalWindX + globalWindX + randomWindX;
@@ -414,40 +445,24 @@ export default function MemoryFadePage() {
               });
 
               // Slow fade-out effect
-              if (elapsed > 1500) {
-                // Start fading after 1.5 seconds
-                const fadeProgress = Math.min(1, (elapsed - 1500) / 6000); // Complete fade-out in 6 seconds
+              if (elapsed > TIMING_CONSTANTS.FADE_START_DELAY) {
+                const fadeProgress = Math.min(1, (elapsed - TIMING_CONSTANTS.FADE_START_DELAY) / TIMING_CONSTANTS.FADE_DURATION);
                 char.alpha = 255 * (1 - fadeProgress);
               }
             }
           }
+        };
 
-          // Update physics engine
-          Engine.update(engine);
-
-          // Update and draw floating characters
-          for (const char of floatingChars) {
-            if (char.body) {
-              // Update character position to physics body position
-              char.x = char.body.position.x;
-              char.y = char.body.position.y;
-            }
-
-            p.fill(0, char.alpha);
-            p.text(char.char, char.x, char.y);
-          }
-
-          // Update fade-in animations and draw static characters
+        const renderStaticCharacters = (currentTime: number) => {
           for (const char of characters) {
             if (!char.isFloating && char.isVisible) {
               // Handle fade-in animation
               if (char.isFadingIn) {
-                const elapsed = p.millis() - char.fadeInStartTime;
-                const fadeInDuration = 800; // 800ms fade-in duration
+                const elapsed = currentTime - char.fadeInStartTime;
 
-                if (elapsed < fadeInDuration) {
+                if (elapsed < TIMING_CONSTANTS.FADE_IN_DURATION) {
                   // Use easing function for more natural fade-in
-                  const progress = elapsed / fadeInDuration;
+                  const progress = elapsed / TIMING_CONSTANTS.FADE_IN_DURATION;
                   const easedProgress = 1 - Math.pow(1 - progress, 3); // easeOutCubic
                   char.alpha = 255 * easedProgress;
                 } else {
@@ -467,8 +482,42 @@ export default function MemoryFadePage() {
               p.text(char.char, char.x, char.y);
             }
           }
+        };
 
-          // Characters float away and fade out
+        p.draw = () => {
+          p.background(255);
+          p.fill(0);
+          p.noStroke();
+
+          const currentTime = p.millis();
+
+          // Process floating queue
+          processFloatingQueue(currentTime);
+
+          // Check if reset needs to start and handle reset process
+          processReset(currentTime);
+
+          // Apply gentle wind effects to floating characters
+          applyWindEffects(currentTime);
+
+          // Update physics engine
+          Engine.update(engine);
+
+          // Update and draw floating characters
+          for (const char of floatingChars) {
+            if (char.body) {
+              // Update character position to physics body position
+              char.x = char.body.position.x;
+              char.y = char.body.position.y;
+            }
+
+            p.fill(0, char.alpha);
+            p.text(char.char, char.x, char.y);
+          }
+
+          // Update fade-in animations and draw static characters
+          renderStaticCharacters(currentTime);
+
         };
 
         p.mousePressed = () => {
