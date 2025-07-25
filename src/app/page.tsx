@@ -27,6 +27,11 @@ export default function Home() {
       name: "Rust diffusion",
       url: "arts/rust-diffusion",
     },
+    {
+      id: 6,
+      name: "Ripples",
+      url: "arts/ripples",
+    },
   ]
   return (
     <main className="font-sans h-[100dvh] flex items-center justify-center bg-white p-8">
