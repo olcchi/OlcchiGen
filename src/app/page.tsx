@@ -22,6 +22,11 @@ export default function Home() {
       name: "Maze",
       url: "arts/maze",
     },
+    {
+      id: 5,
+      name: "Rust",
+      url: "arts/rust",
+    },
   ]
   return (
     <div className="font-sans h-[100dvh] flex items-center justify-center bg-white p-8">
