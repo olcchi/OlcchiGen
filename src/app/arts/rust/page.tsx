@@ -148,7 +148,22 @@ export default function RustDiffusion() {
       ) { }
 
       next() {
-        if (!this.iterations) return;
+        if (!this.iterations) {
+          // Check if there are still unrusted areas
+          const hasUnrustedAreas = rustness.some(col => col.some(cell => cell < 0.9));
+          if (hasUnrustedAreas) {
+            // Reset iterations to continue spreading
+            this.iterations = 50;
+            // Add random points to ensure coverage
+            const randomPoints = range(5).map(() => [
+              trunc(random(0, width)),
+              trunc(random(0, height))
+            ] as Vector).filter(([x, y]) => rustness[x][y] < 0.5);
+            this.activePoints.push(...randomPoints);
+          } else {
+            return;
+          }
+        }
         this.iterations -= 1;
 
         const newPoints: Vector[] = [];
@@ -158,7 +173,7 @@ export default function RustDiffusion() {
 
           // Add rust intensity to current point
           if (inbound([x, y])) {
-            rustness[x][y] += random(0, 0.1);
+            rustness[x][y] = Math.min(1, rustness[x][y] + random(0.05, 0.15));
             dirtyRegions.add(`${x},${y}`);
           }
 
@@ -184,14 +199,15 @@ export default function RustDiffusion() {
                 const currentRust = rustness[px][py];
                 if (currentRust === 0) return true;
                 if (currentRust >= 1) return false;
-                if (currentRust > 0.8) return random() > 0.5;
-                else return random() > 0.2;
+                // Increase probability to ensure complete coverage
+                if (currentRust > 0.8) return random() > 0.3;
+                else return random() > 0.1;
               })
           );
         });
 
-        // Limit active points to prevent explosion
-        this.activePoints = sampleSize(newPoints, 50);
+        // Limit active points but allow more for better coverage
+        this.activePoints = sampleSize(newPoints, Math.min(100, newPoints.length));
       }
     }
 
@@ -304,7 +320,7 @@ export default function RustDiffusion() {
       </div>
 
       <div className="text-xs font-mono text-gray-500 mt-2">
-        点击选择锈点 / Click to select rust points
+        点击选择锈源 / Click to select rust sources
       </div>
     </>
   );
