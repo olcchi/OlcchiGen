@@ -24,7 +24,7 @@ interface Character {
  * Memory Fade animation page - displays text that falls and fades when clicked
  * Uses Matter.js for realistic physics
  */
-export default function MemoryFadePage() {
+export default function Fade() {
   const containerRef = useRef<HTMLDivElement>(null);
   const p5InstanceRef = useRef<import('p5') | null>(null);
 
@@ -573,7 +573,7 @@ export default function MemoryFadePage() {
 
   return (
     <>
-      <h1 className="text-sm font-mono font-bold mb-4">Memory Fade</h1>
+      <h1 className="text-sm font-mono font-bold mb-4">Fade</h1>
       <div className="w-80 h-80 xl:w-100 xl:h-100  border border-black">
         <div ref={containerRef} className="w-full h-full" />
       </div>

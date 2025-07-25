@@ -14,8 +14,8 @@ export default function Home() {
     },
     {
       id: 3,
-      name: "Memory Fade",
-      url: "arts/memory-fade",
+      name: "Fade",
+      url: "arts/fade",
     },
     {
       id: 4,
