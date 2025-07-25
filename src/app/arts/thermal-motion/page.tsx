@@ -146,7 +146,7 @@ export default function ThermalMotionPage() {
 
   return (
     <>
-      <h1 className="text-sm font-mono font-bold mb-4">Thermal Motion</h1>
+      <h1 className="text-sm font-mono font-bold mb-4">Thermal motion</h1>
       <div className="w-80 h-80 xl:w-100 xl:h-100 border border-black">
         <div ref={containerRef} className="w-full h-full" />
       </div>

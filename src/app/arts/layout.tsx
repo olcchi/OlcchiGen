@@ -10,6 +10,7 @@ interface ArtsLayoutProps {
  * Provides basic navigation back to catalog
  */
 export default function ArtsLayout({ children }: ArtsLayoutProps) {
+
   return (
     <div className="h-full w-full flex justify-center items-center">
       <div className="w-200 max-w-screen flex flex-col justify-center">

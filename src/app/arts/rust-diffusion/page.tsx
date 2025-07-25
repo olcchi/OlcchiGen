@@ -279,11 +279,38 @@ export default function RustDiffusion() {
       animationRef.current = requestAnimationFrame(frame);
     };
 
-    // Handle canvas click
-    const handleClick = (event: MouseEvent) => {
+    // Handle canvas click and touch events
+    const getEventCoordinates = (event: MouseEvent | TouchEvent) => {
       const rect = canvas.getBoundingClientRect();
-      const x = Math.floor(event.clientX - rect.left);
-      const y = Math.floor(event.clientY - rect.top);
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      
+      let clientX: number, clientY: number;
+      
+      if ('touches' in event && event.touches.length > 0) {
+        // Touch event
+        clientX = event.touches[0].clientX;
+        clientY = event.touches[0].clientY;
+      } else if ('changedTouches' in event && event.changedTouches.length > 0) {
+        // Touch end event
+        clientX = event.changedTouches[0].clientX;
+        clientY = event.changedTouches[0].clientY;
+      } else {
+        // Mouse event
+        clientX = (event as MouseEvent).clientX;
+        clientY = (event as MouseEvent).clientY;
+      }
+      
+      const x = Math.floor((clientX - rect.left) * scaleX);
+      const y = Math.floor((clientY - rect.top) * scaleY);
+      
+      return { x, y };
+    };
+
+    const handleInteraction = (event: MouseEvent | TouchEvent) => {
+      event.preventDefault(); // Prevent default touch behaviors
+      
+      const { x, y } = getEventCoordinates(event);
 
       if (x >= 0 && x < width && y >= 0 && y < height) {
         // If animation hasn't started yet, start from click point
@@ -303,8 +330,12 @@ export default function RustDiffusion() {
       }
     };
 
-    // Add event listener
-    canvas.addEventListener('click', handleClick);
+    // Add event listeners for both mouse and touch
+    canvas.addEventListener('click', handleInteraction);
+    canvas.addEventListener('touchend', handleInteraction);
+    
+    // Prevent context menu on long press
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
     // Initialize canvas but don't start animation
     clear();
@@ -314,7 +345,9 @@ export default function RustDiffusion() {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
-      canvas.removeEventListener('click', handleClick);
+      canvas.removeEventListener('click', handleInteraction);
+      canvas.removeEventListener('touchend', handleInteraction);
+      canvas.removeEventListener('contextmenu', (e) => e.preventDefault());
     };
   }, [rustPalette, mossPalette, trunc]);
 
@@ -322,7 +355,7 @@ export default function RustDiffusion() {
 
   return (
     <>
-      <h1 className="text-sm font-mono font-bold mb-4">Rust Diffusion</h1>
+      <h1 className="text-sm font-mono font-bold mb-4">Rust diffusion</h1>
       <div className="w-80 h-80 xl:w-100 xl:h-100 border border-black">
         <canvas
           ref={canvasRef}

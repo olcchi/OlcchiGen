@@ -9,7 +9,7 @@ export default function Home() {
     },
     {
       id: 2,
-      name: "Circle Loop",
+      name: "Circle loop",
       url: "arts/circle-loop",
     },
     {
@@ -24,15 +24,13 @@ export default function Home() {
     },
     {
       id: 5,
-      name: "Rust",
-      url: "arts/rust",
+      name: "Rust diffusion",
+      url: "arts/rust-diffusion",
     },
   ]
   return (
-    <div className="font-sans h-[100dvh] flex items-center justify-center bg-white p-8">
-      <main className="">
-        <ArtList arts={arts} />
-      </main>
-    </div>
+    <main className="font-sans h-[100dvh] flex items-center justify-center bg-white p-8">
+      <ArtList className="h-fit" arts={arts} />
+    </main>
   );
 }
