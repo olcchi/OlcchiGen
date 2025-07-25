@@ -17,7 +17,7 @@ export default function Maze() {
   // Entrance animation state
   const animationStartTimeRef = useRef<number>(0);
   const isAnimatingRef = useRef(true);
-  const animationDuration = 3000; // 3 seconds in milliseconds
+  const animationDuration = 6000; // 3 seconds in milliseconds
   const startZoom = 3.0;
   const targetZoom = 1.0;
 
@@ -30,7 +30,7 @@ export default function Maze() {
 
       const sketch = (p: import('p5')) => {
         // Animation parameters
-        const moveSpeed = 3;
+        const moveSpeed = 5;
         const stepsBeforeTurn = 20; // steps before turning
 
         // Current position and direction of the line head
@@ -81,8 +81,25 @@ export default function Maze() {
         };
 
         const updateOrthographicProjection = () => {
-          const orthoSize = 200 / zoomLevelRef.current;
-          p.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, -1000, 1000);
+          // Calculate orthographic projection size based on canvas dimensions and zoom
+          const container = containerRef.current;
+          if (container) {
+            const rect = container.getBoundingClientRect();
+            const aspectRatio = rect.width / rect.height;
+            
+            // Base size adjusted for larger viewing area
+            const baseSize = 300 / zoomLevelRef.current;
+            
+            // Adjust for aspect ratio to prevent clipping
+            const orthoWidth = baseSize * Math.max(1, aspectRatio);
+            const orthoHeight = baseSize * Math.max(1, 1 / aspectRatio);
+            
+            p.ortho(-orthoWidth, orthoWidth, -orthoHeight, orthoHeight, -Number.MAX_VALUE, Number.MAX_VALUE);
+          } else {
+            // Fallback for default canvas size
+            const orthoSize = 300 / zoomLevelRef.current;
+            p.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, -Number.MAX_VALUE, Number.MAX_VALUE);
+          }
         };
 
         // Expose updateOrthographicProjection to external scope
