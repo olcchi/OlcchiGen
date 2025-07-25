@@ -23,7 +23,6 @@ export default function Maze() {
 
       const sketch = (p: import('p5')) => {
         // Animation parameters
-        let time = 0;
         const moveSpeed = 3;
         const stepsBeforeTurn = 20; // steps before turning
 
@@ -33,7 +32,6 @@ export default function Maze() {
 
         // Key points array to store only turning points and segment endpoints
         let keyPoints: { x: number; y: number; z: number }[] = [];
-        let currentSegmentStart = { x: 0, y: 0, z: 0 };
 
         // Direction change parameters
         let stepCounter = 0;
@@ -80,7 +78,6 @@ export default function Maze() {
         const initializeTrail = () => {
           keyPoints = [];
           headPosition = { x: 0, y: 0, z: 0 };
-          currentSegmentStart = { x: 0, y: 0, z: 0 };
           // Start with a random 90-degree direction
           const randomIndex = Math.floor(Math.random() * possibleDirections.length);
           direction = { ...possibleDirections[randomIndex] };
@@ -108,8 +105,6 @@ export default function Maze() {
             const randomIndex = Math.floor(Math.random() * validDirections.length);
             direction = { ...validDirections[randomIndex] };
 
-            // Update segment start point
-            currentSegmentStart = { ...headPosition };
             stepCounter = 0;
             
             // Keep all segments for complete trail history
@@ -156,9 +151,6 @@ export default function Maze() {
         p.draw = () => {
           p.background(255);
 
-          // Update time
-          time += 0.02;
-
           // Update movement and trail
           updateMovement();
 
@@ -176,7 +168,7 @@ export default function Maze() {
           p.ambientLight(200);
         };
 
-        p.mouseWheel = (event: any) => {
+        p.mouseWheel = (event: { delta: number }) => {
           // Handle mouse wheel zoom
           const delta = event.delta;
           if (delta > 0) {
