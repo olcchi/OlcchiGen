@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 
 /**
  * Rust Diffusion animation page - simulates rust spreading using cellular automata
@@ -19,8 +19,8 @@ export default function RustDiffusion() {
   const iterations = 3;
   const animationStarted = useRef(false);
 
-  // Color palette for rust effect (RGB values)
-  const rustPalette = [
+  // Color palette for rust effect (RGB values) - memoized to prevent re-renders
+  const rustPalette = useMemo(() => [
     [255, 255, 255], // White
     [247, 235, 190], // Light cream
     [242, 211, 153], // Beige
@@ -28,7 +28,19 @@ export default function RustDiffusion() {
     [242, 127, 61],  // Orange  
     [140, 65, 48],   // Dark brown
     [89, 42, 42],    // Dark red-brown
-  ];
+  ], []);
+
+  // Color palette for moss effect - memoized to prevent re-renders
+  const mossPalette = useMemo(() => [
+    [200, 220, 180], // Light moss green
+    [180, 200, 160], // Pale moss
+    [160, 180, 140], // Medium light moss
+    [140, 160, 120], // Medium moss
+    [120, 140, 100], // Medium dark moss
+    [100, 120, 80],  // Dark moss
+    [80, 100, 60],   // Deep moss
+    [60, 80, 40],    // Darkest moss
+  ] as [number, number, number][], []);
 
 
   // Utility functions
@@ -93,7 +105,7 @@ export default function RustDiffusion() {
     };
 
     // Track dirty regions for optimized rendering
-    let dirtyRegions = new Set<string>();
+    const dirtyRegions = new Set<string>();
 
     // Update canvas with current rustness data (optimized)
     const updateCanvas = () => {
@@ -304,7 +316,7 @@ export default function RustDiffusion() {
       }
       canvas.removeEventListener('click', handleClick);
     };
-  }, []);
+  }, [rustPalette, mossPalette, trunc]);
 
 
 
