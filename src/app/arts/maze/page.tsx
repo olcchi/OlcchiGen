@@ -13,6 +13,13 @@ export default function Maze() {
   const [zoomValue, setZoomValue] = useState([1.0]);
   const zoomLevelRef = useRef(1.0);
   const updateOrthographicProjectionRef = useRef<(() => void) | null>(null);
+  
+  // Entrance animation state
+  const animationStartTimeRef = useRef<number>(0);
+  const isAnimatingRef = useRef(true);
+  const animationDuration = 3000; // 3 seconds in milliseconds
+  const startZoom = 3.0;
+  const targetZoom = 1.0;
 
   useEffect(() => {
     // Dynamically import p5.js to avoid SSR issues
@@ -59,6 +66,12 @@ export default function Maze() {
           } else {
             p.createCanvas(480, 360, p.WEBGL);
           }
+
+          // Initialize entrance animation
+          animationStartTimeRef.current = p.millis();
+          isAnimatingRef.current = true;
+          zoomLevelRef.current = startZoom;
+          setZoomValue([startZoom]);
 
           // Use orthographic projection for isometric view
           updateOrthographicProjection();
@@ -148,8 +161,36 @@ export default function Maze() {
           p.endShape();
         };
 
+        // Easing function for smooth animation (ease-out)
+        const easeOut = (t: number): number => {
+          return 1 - Math.pow(1 - t, 3);
+        };
+
         p.draw = () => {
           p.background(255);
+
+          // Handle entrance animation
+          if (isAnimatingRef.current) {
+            const currentTime = p.millis();
+            const elapsed = currentTime - animationStartTimeRef.current;
+            const progress = Math.min(elapsed / animationDuration, 1);
+            
+            // Apply easing to the progress
+            const easedProgress = easeOut(progress);
+            
+            // Interpolate zoom value
+            const currentZoom = startZoom + (targetZoom - startZoom) * easedProgress;
+            zoomLevelRef.current = currentZoom;
+            setZoomValue([currentZoom]);
+            updateOrthographicProjection();
+            
+            // End animation when complete
+            if (progress >= 1) {
+              isAnimatingRef.current = false;
+              zoomLevelRef.current = targetZoom;
+              setZoomValue([targetZoom]);
+            }
+          }
 
           // Update movement and trail
           updateMovement();
@@ -169,6 +210,11 @@ export default function Maze() {
         };
 
         p.mouseWheel = (event: { delta: number }) => {
+          // Disable mouse wheel zoom during entrance animation
+          if (isAnimatingRef.current) {
+            return false;
+          }
+          
           // Handle mouse wheel zoom
           const delta = event.delta;
           if (delta > 0) {
@@ -219,6 +265,10 @@ export default function Maze() {
 
   // Handle zoom change from slider
   const handleZoomChange = (value: number[]) => {
+    // Disable slider during entrance animation
+    if (isAnimatingRef.current) {
+      return;
+    }
     setZoomValue(value);
     zoomLevelRef.current = value[0];
   };
