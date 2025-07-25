@@ -74,7 +74,7 @@ export default function MemoryFadePage() {
           "因为不知死何时将至，我们仍将生命视为无穷无尽、取之不竭的源泉。然而，一生所遇之事也许就只发生那么几次。曾经左右过我们人生的童年回忆浮现在心头的时刻还能有多少次呢？也许还能有四五次。目睹满月升起的时刻又还能有多少次呢？或许最多还能有二十次。但人们总是深信这些机会将无穷无尽。";
         let characters: Character[] = [];
         let floatingChars: Character[] = [];
-        
+
         let isFloating = false;
         let floatQueue: number[] = []; // Queue of character indices waiting to float away
         let lastFloatTime = 0;
@@ -577,11 +577,9 @@ export default function MemoryFadePage() {
       <div className="w-80 h-80 xl:w-100 xl:h-100  border border-black">
         <div ref={containerRef} className="w-full h-full" />
       </div>
-      <div className="flex flex-col items-center gap-2">
-        <p className="text-xs font-mono text-gray-600 max-w-md text-center">
-Click on text to start memory fade / 点击文字让记忆开始消散
-        </p>
-      </div>
+      <p className="text-xs font-mono text-gray-600 max-w-md text-center">
+        Click on text to start memory fade / 点击文字让记忆开始消散
+      </p>
     </>
   );
 }

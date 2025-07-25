@@ -17,6 +17,11 @@ export default function Home() {
       name: "Memory Fade",
       url: "arts/memory-fade",
     },
+    {
+      id: 4,
+      name: "Maze",
+      url: "arts/maze",
+    },
   ]
   return (
     <div className="font-sans h-[100dvh] flex items-center justify-center bg-white p-8">
