@@ -188,7 +188,7 @@ export default function RipplesPage() {
         />
       </div>
       <div className='flex flex-col items-center gap-2'>
-        <p className="text-xs text-gray-600 mt-2">Click, drag, or touch to create water ripples</p>
+        <p className="text-xs text-gray-600 mt-2">点击，拖拽，或触摸创造涟漪 / Click, drag, or touch to create water ripples</p>
         <div className="h-12"></div>
       </div>
     </>
