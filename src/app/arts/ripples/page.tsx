@@ -548,18 +548,7 @@ class WaterRenderer {
         float caustics = (caustics1 + caustics2) * 0.5;
         caustics = smoothstep(-0.5, 0.5, caustics);
         
-        // Create checkered background with #77969A color
-        vec2 checkerCoord = refractedCoord * 12.0;
-        vec2 checkerId = floor(checkerCoord);
-        
-        // Checkered pattern
-        float checker = mod(checkerId.x + checkerId.y, 2.0);
-        vec3 lightBlue1 = vec3(0.467, 0.588, 0.604);  // #77969A
-        vec3 lightBlue2 = vec3(0.4, 0.52, 0.54);  // Slightly darker variant
-        vec3 backgroundColor = mix(lightBlue1, lightBlue2, checker);
-        
-        // Apply caustics to background
-        backgroundColor += caustics * 0.3 * vec3(1.0, 1.0, 0.8);
+
         
         // Water surface reflection with chromatic dispersion (enhanced normals)
          vec3 viewDir = normalize(vec3(coord - 0.5, 1.0));
@@ -589,24 +578,36 @@ class WaterRenderer {
          causticsG = smoothstep(-0.5, 0.5, causticsG);
          causticsB = smoothstep(-0.5, 0.5, causticsB);
          
-         // Background pattern with chromatic dispersion
-         vec2 tileCoordR = refractedCoordR * 8.0;
-         vec2 tileCoordG = refractedCoordG * 8.0;
-         vec2 tileCoordB = refractedCoordB * 8.0;
+         // Simple grid pattern with chromatic dispersion - no gradients
+         vec2 gridCoordR = refractedCoordR * 12.0;
+         vec2 gridCoordG = refractedCoordG * 12.0;
+         vec2 gridCoordB = refractedCoordB * 12.0;
          
-         vec2 tileR = fract(tileCoordR);
-         vec2 tileG = fract(tileCoordG);
-         vec2 tileB = fract(tileCoordB);
+         vec2 gridPosR = fract(gridCoordR);
+         vec2 gridPosG = fract(gridCoordG);
+         vec2 gridPosB = fract(gridCoordB);
          
-         float tilePatternR = smoothstep(0.1, 0.9, tileR.x) * smoothstep(0.1, 0.9, tileR.y);
-         float tilePatternG = smoothstep(0.1, 0.9, tileG.x) * smoothstep(0.1, 0.9, tileG.y);
-         float tilePatternB = smoothstep(0.1, 0.9, tileB.x) * smoothstep(0.1, 0.9, tileB.y);
+         // Simple border detection - no smoothstep gradients
+         float borderWidthChromatic = 0.03;
+         float borderR = max(step(gridPosR.x, borderWidthChromatic) + step(1.0 - borderWidthChromatic, gridPosR.x),
+                            step(gridPosR.y, borderWidthChromatic) + step(1.0 - borderWidthChromatic, gridPosR.y));
+         float borderG = max(step(gridPosG.x, borderWidthChromatic) + step(1.0 - borderWidthChromatic, gridPosG.x),
+                            step(gridPosG.y, borderWidthChromatic) + step(1.0 - borderWidthChromatic, gridPosG.y));
+         float borderB = max(step(gridPosB.x, borderWidthChromatic) + step(1.0 - borderWidthChromatic, gridPosB.x),
+                            step(gridPosB.y, borderWidthChromatic) + step(1.0 - borderWidthChromatic, gridPosB.y));
          
-         // Dispersed background color with #77969A base
+         borderR = min(borderR, 1.0);
+         borderG = min(borderG, 1.0);
+         borderB = min(borderB, 1.0);
+         
+         // Pure colors - background or border, no mixing
+         vec3 gridBg = vec3(0.412, 0.690, 0.675);  // #69B0AC
+         vec3 gridBd = vec3(0.4, 0.6, 0.631);      // #6699A1
+         
          vec3 backgroundColorDispersed;
-         backgroundColorDispersed.r = mix(0.467, 0.4, tilePatternR) + causticsR * 0.3;
-         backgroundColorDispersed.g = mix(0.588, 0.52, tilePatternG) + causticsG * 0.3;
-         backgroundColorDispersed.b = mix(0.604, 0.54, tilePatternB) + causticsB * 0.3;
+         backgroundColorDispersed.r = (borderR > 0.5) ? gridBd.r + causticsR * 0.3 : gridBg.r + causticsR * 0.3;
+         backgroundColorDispersed.g = (borderG > 0.5) ? gridBd.g + causticsG * 0.3 : gridBg.g + causticsG * 0.3;
+         backgroundColorDispersed.b = (borderB > 0.5) ? gridBd.b + causticsB * 0.3 : gridBg.b + causticsB * 0.3;
          
          // Sky reflection with prismatic effect at edges
          vec3 skyColor = vec3(0.5, 0.7, 1.0);
