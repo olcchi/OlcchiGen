@@ -18,7 +18,7 @@ export default function RipplesPage() {
     // Initialize WebGL context
     const canvas = canvasRef.current
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
-    
+
     if (!gl || !(gl instanceof WebGLRenderingContext)) {
       console.error('WebGL not supported')
       return
@@ -34,7 +34,7 @@ export default function RipplesPage() {
     // Initialize water simulation and renderer
     const water = new Water(gl)
     const renderer = new WaterRenderer(gl)
-    
+
     waterRef.current = water
     rendererRef.current = renderer
 
@@ -44,23 +44,23 @@ export default function RipplesPage() {
       if (container) {
         const rect = container.getBoundingClientRect()
         const dpr = window.devicePixelRatio || 1
-        
+
         // Set actual canvas size in memory (scaled by DPR)
         canvas.width = rect.width * dpr
         canvas.height = rect.height * dpr
-        
+
         // Scale canvas back down using CSS to fit container exactly
         canvas.style.width = rect.width + 'px'
         canvas.style.height = rect.height + 'px'
         canvas.style.maxWidth = '100%'
         canvas.style.maxHeight = '100%'
         canvas.style.objectFit = 'contain'
-        
+
         // Set WebGL viewport to match the scaled canvas
         gl.viewport(0, 0, canvas.width, canvas.height)
       }
     }
-    
+
     resizeCanvas()
     window.addEventListener('resize', resizeCanvas)
 
@@ -76,22 +76,22 @@ export default function RipplesPage() {
 
     // Mouse and touch interaction
     let isInteracting = false
-    
+
     const handleMouseDown = (e: MouseEvent) => {
       isInteracting = true
       addRippleAtPosition(e.clientX, e.clientY)
     }
-    
+
     const handleMouseMove = (e: MouseEvent) => {
       if (isInteracting) {
         addRippleAtPosition(e.clientX, e.clientY)
       }
     }
-    
+
     const handleMouseUp = () => {
       isInteracting = false
     }
-    
+
     // Touch event handlers
     const handleTouchStart = (e: TouchEvent) => {
       e.preventDefault() // Prevent scrolling and other default behaviors
@@ -99,7 +99,7 @@ export default function RipplesPage() {
       const touch = e.touches[0]
       addRippleAtPosition(touch.clientX, touch.clientY)
     }
-    
+
     const handleTouchMove = (e: TouchEvent) => {
       e.preventDefault() // Prevent scrolling
       if (isInteracting && e.touches.length > 0) {
@@ -107,12 +107,12 @@ export default function RipplesPage() {
         addRippleAtPosition(touch.clientX, touch.clientY)
       }
     }
-    
+
     const handleTouchEnd = (e: TouchEvent) => {
       e.preventDefault()
       isInteracting = false
     }
-    
+
     const addRippleAtPosition = (clientX: number, clientY: number) => {
       const rect = canvas.getBoundingClientRect()
       // Calculate normalized coordinates (0 to 1) based on CSS size
@@ -120,13 +120,13 @@ export default function RipplesPage() {
       const y = -((clientY - rect.top) / rect.height) * 2 + 1
       water.addDrop(x, y, 0.03, 0.02)
     }
-    
+
     // Mouse events
     canvas.addEventListener('mousedown', handleMouseDown)
     canvas.addEventListener('mousemove', handleMouseMove)
     canvas.addEventListener('mouseup', handleMouseUp)
     canvas.addEventListener('mouseleave', handleMouseUp)
-    
+
     // Touch events
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false })
     canvas.addEventListener('touchmove', handleTouchMove, { passive: false })
@@ -139,13 +139,13 @@ export default function RipplesPage() {
       water.stepSimulation()
       water.stepSimulation() // Run twice for stability
       water.updateNormals()
-      
+
       // Render
       renderer.render(water)
-      
+
       animationRef.current = requestAnimationFrame(animate)
     }
-    
+
     animate()
 
     // Cleanup
@@ -154,19 +154,19 @@ export default function RipplesPage() {
         cancelAnimationFrame(animationRef.current)
       }
       window.removeEventListener('resize', resizeCanvas)
-      
+
       // Remove mouse events
       canvas.removeEventListener('mousedown', handleMouseDown)
       canvas.removeEventListener('mousemove', handleMouseMove)
       canvas.removeEventListener('mouseup', handleMouseUp)
       canvas.removeEventListener('mouseleave', handleMouseUp)
-      
+
       // Remove touch events
       canvas.removeEventListener('touchstart', handleTouchStart)
       canvas.removeEventListener('touchmove', handleTouchMove)
       canvas.removeEventListener('touchend', handleTouchEnd)
       canvas.removeEventListener('touchcancel', handleTouchEnd)
-      
+
       water.dispose()
       renderer.dispose()
     }
@@ -176,10 +176,10 @@ export default function RipplesPage() {
     <>
       <h1 className="text-sm font-mono font-bold mb-4">Ripples</h1>
       <div className="w-80 h-80 xl:w-100 xl:h-100 border border-black">
-        <canvas 
-          ref={canvasRef} 
+        <canvas
+          ref={canvasRef}
           className="w-full h-full cursor-pointer"
-          style={{ 
+          style={{
             display: 'block',
             boxSizing: 'border-box',
             maxWidth: '100%',
@@ -210,20 +210,20 @@ class Water {
 
   constructor(gl: WebGLRenderingContext) {
     this.gl = gl
-    
+
     // Create textures for ping-pong rendering
     this.textureA = this.createTexture()
     this.textureB = this.createTexture()
-    
+
     // Create framebuffers
     this.framebufferA = this.createFramebuffer(this.textureA)
     this.framebufferB = this.createFramebuffer(this.textureB)
-    
+
     // Create shaders
     this.dropShader = this.createDropShader()
     this.updateShader = this.createUpdateShader()
     this.normalShader = this.createNormalShader()
-    
+
     // Create quad for rendering
     this.quadBuffer = this.createQuad()
   }
@@ -250,20 +250,20 @@ class Water {
 
   private createShader(vertexSource: string, fragmentSource: string): WebGLProgram {
     const gl = this.gl
-    
+
     const vertexShader = gl.createShader(gl.VERTEX_SHADER)!
     gl.shaderSource(vertexShader, vertexSource)
     gl.compileShader(vertexShader)
-    
+
     const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)!
     gl.shaderSource(fragmentShader, fragmentSource)
     gl.compileShader(fragmentShader)
-    
+
     const program = gl.createProgram()!
     gl.attachShader(program, vertexShader)
     gl.attachShader(program, fragmentShader)
     gl.linkProgram(program)
-    
+
     return program
   }
 
@@ -276,7 +276,7 @@ class Water {
         gl_Position = vec4(position, 0.0, 1.0);
       }
     `
-    
+
     const fragmentSource = `
       precision mediump float;
       uniform sampler2D texture;
@@ -293,7 +293,7 @@ class Water {
         gl_FragColor = info;
       }
     `
-    
+
     return this.createShader(vertexSource, fragmentSource)
   }
 
@@ -306,7 +306,7 @@ class Water {
         gl_Position = vec4(position, 0.0, 1.0);
       }
     `
-    
+
     const fragmentSource = `
       precision mediump float;
       uniform sampler2D texture;
@@ -332,7 +332,7 @@ class Water {
         gl_FragColor = info;
       }
     `
-    
+
     return this.createShader(vertexSource, fragmentSource)
   }
 
@@ -345,7 +345,7 @@ class Water {
         gl_Position = vec4(position, 0.0, 1.0);
       }
     `
-    
+
     const fragmentSource = `
       precision mediump float;
       uniform sampler2D texture;
@@ -363,7 +363,7 @@ class Water {
         gl_FragColor = info;
       }
     `
-    
+
     return this.createShader(vertexSource, fragmentSource)
   }
 
@@ -373,83 +373,83 @@ class Water {
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
       -1, -1,
-       1, -1,
-      -1,  1,
-       1,  1
+      1, -1,
+      -1, 1,
+      1, 1
     ]), gl.STATIC_DRAW)
     return buffer
   }
 
   addDrop(x: number, y: number, radius: number, strength: number) {
     const gl = this.gl
-    
+
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebufferB)
     gl.viewport(0, 0, this.size, this.size)
-    
+
     gl.useProgram(this.dropShader)
     gl.bindTexture(gl.TEXTURE_2D, this.textureA)
-    
+
     const centerLoc = gl.getUniformLocation(this.dropShader, 'center')
     const radiusLoc = gl.getUniformLocation(this.dropShader, 'radius')
     const strengthLoc = gl.getUniformLocation(this.dropShader, 'strength')
     const textureLoc = gl.getUniformLocation(this.dropShader, 'texture')
-    
+
     if (centerLoc) gl.uniform2f(centerLoc, x, y)
     if (radiusLoc) gl.uniform1f(radiusLoc, radius)
     if (strengthLoc) gl.uniform1f(strengthLoc, strength)
     if (textureLoc) gl.uniform1i(textureLoc, 0)
-    
+
     this.drawQuad()
     this.swapTextures()
   }
 
   stepSimulation() {
     const gl = this.gl
-    
+
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebufferB)
     gl.viewport(0, 0, this.size, this.size)
-    
+
     gl.useProgram(this.updateShader)
     gl.bindTexture(gl.TEXTURE_2D, this.textureA)
-    
+
     const deltaLoc = gl.getUniformLocation(this.updateShader, 'delta')
     const textureLoc = gl.getUniformLocation(this.updateShader, 'texture')
-    
+
     if (deltaLoc) gl.uniform2f(deltaLoc, 1 / this.size, 1 / this.size)
     if (textureLoc) gl.uniform1i(textureLoc, 0)
-    
+
     this.drawQuad()
     this.swapTextures()
   }
 
   updateNormals() {
     const gl = this.gl
-    
+
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebufferB)
     gl.viewport(0, 0, this.size, this.size)
-    
+
     gl.useProgram(this.normalShader)
     gl.bindTexture(gl.TEXTURE_2D, this.textureA)
-    
+
     const deltaLoc = gl.getUniformLocation(this.normalShader, 'delta')
     const textureLoc = gl.getUniformLocation(this.normalShader, 'texture')
-    
+
     if (deltaLoc) gl.uniform2f(deltaLoc, 1 / this.size, 1 / this.size)
     if (textureLoc) gl.uniform1i(textureLoc, 0)
-    
+
     this.drawQuad()
     this.swapTextures()
   }
 
   private drawQuad() {
     const gl = this.gl
-    
+
     gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuffer)
     const currentProgram = gl.getParameter(gl.CURRENT_PROGRAM) as WebGLProgram
     const positionLoc = gl.getAttribLocation(currentProgram, 'position')
     gl.enableVertexAttribArray(positionLoc)
     gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0)
-    
+
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
   }
 
@@ -489,20 +489,20 @@ class WaterRenderer {
 
   private createShader(vertexSource: string, fragmentSource: string): WebGLProgram {
     const gl = this.gl
-    
+
     const vertexShader = gl.createShader(gl.VERTEX_SHADER)!
     gl.shaderSource(vertexShader, vertexSource)
     gl.compileShader(vertexShader)
-    
+
     const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)!
     gl.shaderSource(fragmentShader, fragmentSource)
     gl.compileShader(fragmentShader)
-    
+
     const program = gl.createProgram()!
     gl.attachShader(program, vertexShader)
     gl.attachShader(program, fragmentShader)
     gl.linkProgram(program)
-    
+
     return program
   }
 
@@ -515,7 +515,7 @@ class WaterRenderer {
         gl_Position = vec4(position, 0.0, 1.0);
       }
     `
-    
+
     const fragmentSource = `
       precision mediump float;
       uniform sampler2D waterTexture;
@@ -537,18 +537,6 @@ class WaterRenderer {
         float depth = 1.0 - length(coord - 0.5) * 2.0;
         depth = clamp(depth, 0.0, 1.0);
         depth = smoothstep(0.0, 1.0, depth);
-        
-        // Refraction effect - distort background based on normals (enhanced)
-        vec2 refraction = normal * 0.25;
-        vec2 refractedCoord = coord + refraction;
-        
-        // Create underwater caustics pattern
-        float caustics1 = sin(refractedCoord.x * 20.0 + time * 2.0) * sin(refractedCoord.y * 15.0 + time * 1.5);
-        float caustics2 = sin(refractedCoord.x * 25.0 - time * 1.8) * sin(refractedCoord.y * 18.0 - time * 2.2);
-        float caustics = (caustics1 + caustics2) * 0.5;
-        caustics = smoothstep(-0.5, 0.5, caustics);
-        
-
         
         // Water surface reflection with chromatic dispersion (enhanced normals)
          vec3 viewDir = normalize(vec3(coord - 0.5, 1.0));
@@ -652,7 +640,7 @@ class WaterRenderer {
         gl_FragColor = vec4(finalColor, 1.0);
       }
     `
-    
+
     return this.createShader(vertexSource, fragmentSource)
   }
 
@@ -662,36 +650,36 @@ class WaterRenderer {
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
       -1, -1,
-       1, -1,
-      -1,  1,
-       1,  1
+      1, -1,
+      -1, 1,
+      1, 1
     ]), gl.STATIC_DRAW)
     return buffer
   }
 
   render(water: Water) {
     const gl = this.gl
-    
+
     // Render to screen
     gl.bindFramebuffer(gl.FRAMEBUFFER, null)
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
-    
+
     gl.clear(gl.COLOR_BUFFER_BIT)
-    
+
     gl.useProgram(this.renderShader)
     gl.bindTexture(gl.TEXTURE_2D, water.getTexture())
-    
+
     const waterTextureLoc = gl.getUniformLocation(this.renderShader, 'waterTexture')
     const timeLoc = gl.getUniformLocation(this.renderShader, 'time')
-    
+
     if (waterTextureLoc) gl.uniform1i(waterTextureLoc, 0)
     if (timeLoc) gl.uniform1f(timeLoc, Date.now() * 0.001)
-    
+
     gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuffer)
     const positionLoc = gl.getAttribLocation(this.renderShader, 'position')
     gl.enableVertexAttribArray(positionLoc)
     gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0)
-    
+
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
   }
 
