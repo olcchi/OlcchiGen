@@ -38,13 +38,25 @@ export default function RipplesPage() {
     waterRef.current = water
     rendererRef.current = renderer
 
-    // Set canvas size
+    // Set canvas size with high DPI support
     const resizeCanvas = () => {
       const container = canvas.parentElement
       if (container) {
         const rect = container.getBoundingClientRect()
-        canvas.width = rect.width
-        canvas.height = rect.height
+        const dpr = window.devicePixelRatio || 1
+        
+        // Set actual canvas size in memory (scaled by DPR)
+        canvas.width = rect.width * dpr
+        canvas.height = rect.height * dpr
+        
+        // Scale canvas back down using CSS to fit container exactly
+        canvas.style.width = rect.width + 'px'
+        canvas.style.height = rect.height + 'px'
+        canvas.style.maxWidth = '100%'
+        canvas.style.maxHeight = '100%'
+        canvas.style.objectFit = 'contain'
+        
+        // Set WebGL viewport to match the scaled canvas
         gl.viewport(0, 0, canvas.width, canvas.height)
       }
     }
@@ -103,6 +115,7 @@ export default function RipplesPage() {
     
     const addRippleAtPosition = (clientX: number, clientY: number) => {
       const rect = canvas.getBoundingClientRect()
+      // Calculate normalized coordinates (0 to 1) based on CSS size
       const x = ((clientX - rect.left) / rect.width) * 2 - 1
       const y = -((clientY - rect.top) / rect.height) * 2 + 1
       water.addDrop(x, y, 0.03, 0.02)
@@ -161,16 +174,21 @@ export default function RipplesPage() {
 
   return (
     <>
-      <h1 className="text-sm font-mono font-bold mb-4">WebGL Water Ripples</h1>
+      <h1 className="text-sm font-mono font-bold mb-4">Ripples</h1>
       <div className="w-80 h-80 xl:w-100 xl:h-100 border border-black">
         <canvas 
           ref={canvasRef} 
           className="w-full h-full cursor-pointer"
-          style={{ display: 'block' }}
+          style={{ 
+            display: 'block',
+            boxSizing: 'border-box',
+            maxWidth: '100%',
+            maxHeight: '100%'
+          }}
         />
       </div>
       <div className='flex flex-col items-center gap-2'>
-        <p className="text-xs text-gray-600 mt-2">Click, drag, or touch to create realistic water ripples</p>
+        <p className="text-xs text-gray-600 mt-2">Click, drag, or touch to create water ripples</p>
         <div className="h-12"></div>
       </div>
     </>
@@ -512,16 +530,16 @@ class WaterRenderer {
         vec2 normal = info.ba;
         
         // Water material properties
-        vec3 waterColor = vec3(0.0, 0.4, 0.8);  // Clear blue water
-        vec3 deepWaterColor = vec3(0.0, 0.1, 0.3);  // Deep water
+        vec3 waterColor = vec3(1.0, 1.0, 1.0);  // Clear colorless water
+        vec3 deepWaterColor = vec3(0.9, 0.9, 0.9);  // Slightly tinted deep water
         
         // Calculate water depth and transparency
         float depth = 1.0 - length(coord - 0.5) * 2.0;
         depth = clamp(depth, 0.0, 1.0);
         depth = smoothstep(0.0, 1.0, depth);
         
-        // Refraction effect - distort background based on normals
-        vec2 refraction = normal * 0.1;
+        // Refraction effect - distort background based on normals (enhanced)
+        vec2 refraction = normal * 0.25;
         vec2 refractedCoord = coord + refraction;
         
         // Create underwater caustics pattern
@@ -530,29 +548,29 @@ class WaterRenderer {
         float caustics = (caustics1 + caustics2) * 0.5;
         caustics = smoothstep(-0.5, 0.5, caustics);
         
-        // Create light blue checkered background
+        // Create checkered background with #77969A color
         vec2 checkerCoord = refractedCoord * 12.0;
         vec2 checkerId = floor(checkerCoord);
         
         // Checkered pattern
         float checker = mod(checkerId.x + checkerId.y, 2.0);
-        vec3 lightBlue1 = vec3(0.85, 0.92, 0.98);  // Very light blue
-        vec3 lightBlue2 = vec3(0.75, 0.88, 0.96);  // Slightly darker light blue
+        vec3 lightBlue1 = vec3(0.467, 0.588, 0.604);  // #77969A
+        vec3 lightBlue2 = vec3(0.4, 0.52, 0.54);  // Slightly darker variant
         vec3 backgroundColor = mix(lightBlue1, lightBlue2, checker);
         
         // Apply caustics to background
         backgroundColor += caustics * 0.3 * vec3(1.0, 1.0, 0.8);
         
-        // Water surface reflection with chromatic dispersion
+        // Water surface reflection with chromatic dispersion (enhanced normals)
          vec3 viewDir = normalize(vec3(coord - 0.5, 1.0));
-         vec3 surfaceNormal = normalize(vec3(normal * 2.0, 1.0));
+         vec3 surfaceNormal = normalize(vec3(normal * 4.0, 1.0));
          float fresnel = pow(1.0 - max(0.0, dot(viewDir, surfaceNormal)), 3.0);
          
-         // Chromatic dispersion - different refractive indices for RGB
-         float dispersionStrength = 0.02;
-         vec2 dispersionR = normal * (0.1 + dispersionStrength);
-         vec2 dispersionG = normal * 0.1;
-         vec2 dispersionB = normal * (0.1 - dispersionStrength);
+         // Chromatic dispersion - different refractive indices for RGB (enhanced)
+         float dispersionStrength = 0.04;
+         vec2 dispersionR = normal * (0.25 + dispersionStrength);
+         vec2 dispersionG = normal * 0.25;
+         vec2 dispersionB = normal * (0.25 - dispersionStrength);
          
          // Sample background with chromatic aberration
          vec2 refractedCoordR = coord + dispersionR;
@@ -584,11 +602,11 @@ class WaterRenderer {
          float tilePatternG = smoothstep(0.1, 0.9, tileG.x) * smoothstep(0.1, 0.9, tileG.y);
          float tilePatternB = smoothstep(0.1, 0.9, tileB.x) * smoothstep(0.1, 0.9, tileB.y);
          
-         // Dispersed background color
+         // Dispersed background color with #77969A base
          vec3 backgroundColorDispersed;
-         backgroundColorDispersed.r = mix(0.8, 0.6, tilePatternR) + causticsR * 0.3;
-         backgroundColorDispersed.g = mix(0.9, 0.7, tilePatternG) + causticsG * 0.3;
-         backgroundColorDispersed.b = mix(1.0, 0.9, tilePatternB) + causticsB * 0.3 * 0.8;
+         backgroundColorDispersed.r = mix(0.467, 0.4, tilePatternR) + causticsR * 0.3;
+         backgroundColorDispersed.g = mix(0.588, 0.52, tilePatternG) + causticsG * 0.3;
+         backgroundColorDispersed.b = mix(0.604, 0.54, tilePatternB) + causticsB * 0.3;
          
          // Sky reflection with prismatic effect at edges
          vec3 skyColor = vec3(0.5, 0.7, 1.0);
@@ -605,27 +623,27 @@ class WaterRenderer {
          vec3 reflectionColor = mix(skyColor, prismColors, prismEffect * 0.6);
          
          // Water transparency based on depth and angle
-         float transparency = mix(0.1, 0.8, depth) * (1.0 - fresnel * 0.7);
+         float transparency = mix(0.05, 0.2, depth) * (1.0 - fresnel * 0.7);
          
          // Mix dispersed background through water with water color
          vec3 underwaterColor = mix(backgroundColorDispersed, waterColor, transparency);
-         underwaterColor = mix(underwaterColor, deepWaterColor, (1.0 - depth) * 0.6);
+         underwaterColor = mix(underwaterColor, deepWaterColor, (1.0 - depth) * 0.1);
          
-         // Add surface reflection with chromatic effects
-         vec3 finalColor = mix(underwaterColor, reflectionColor, fresnel * 0.4);
+         // Add surface reflection with chromatic effects (reduced intensity)
+         vec3 finalColor = mix(underwaterColor, reflectionColor, fresnel * 0.2);
         
-        // Ripple highlights on surface
-        float rippleIntensity = abs(height) * 20.0;
-        rippleIntensity = smoothstep(0.0, 1.0, rippleIntensity);
-        vec3 rippleHighlight = vec3(1.0, 1.0, 1.0);
-        finalColor = mix(finalColor, rippleHighlight, rippleIntensity * 0.3);
+        // Subtle ripple highlights on surface (reduced intensity)
+        float rippleIntensity = abs(height) * 30.0;
+        rippleIntensity = smoothstep(0.2, 0.8, rippleIntensity);
+        vec3 rippleHighlight = vec3(0.9, 0.95, 1.0);
+        finalColor = mix(finalColor, rippleHighlight, rippleIntensity * 0.15);
         
         // Add subtle foam effect at ripple peaks
-        float foam = smoothstep(0.8, 1.0, rippleIntensity);
-        finalColor = mix(finalColor, vec3(0.9, 0.95, 1.0), foam * 0.5);
+        float foam = smoothstep(0.7, 1.0, rippleIntensity);
+        finalColor = mix(finalColor, vec3(0.85, 0.9, 0.95), foam * 0.25);
         
         // Enhance water clarity and depth
-        finalColor = mix(finalColor, waterColor, 0.1);
+        finalColor = mix(finalColor, waterColor, 0.02);
         
         // Final gamma correction
         finalColor = pow(finalColor, vec3(0.85));
