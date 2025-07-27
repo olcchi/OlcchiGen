@@ -33,7 +33,7 @@ export default function Home() {
       url: "arts/ripples",
     },
     {
-      id: 8,
+      id: 7,
       name: "Ring",
       url: "arts/ring",
     },

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Noto_Sans_Mono } from "next/font/google";
 import { Star } from "@/components/ui/star";
-import { Github } from "lucide-react";
 import { headers } from "next/headers";
 import "./globals.css";
 

@@ -118,7 +118,7 @@ export default function RipplesPage() {
       // Calculate normalized coordinates (0 to 1) based on CSS size
       const x = ((clientX - rect.left) / rect.width) * 2 - 1
       const y = -((clientY - rect.top) / rect.height) * 2 + 1
-      water.addDrop(x, y, 0.03, 0.02)
+      water.addDrop(x, y, 0.05, 0.01)
     }
 
     // Mouse events

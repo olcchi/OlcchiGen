@@ -8,7 +8,7 @@ import { useEffect, useRef } from 'react'
  */
 export default function LightPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const animationRef = useRef<number>()
+  const animationRef = useRef<number>(0)
   const rendererRef = useRef<LightRenderer | null>(null)
 
   useEffect(() => {
@@ -118,55 +118,69 @@ class LightRenderer {
    */
   private createShaders(): void {
     const vertexShaderSource = `
-      // Vertex position attribute
+      // Declare input attribute for 2D vertex positions from buffer
       attribute vec2 position;
       
+      // Main vertex shader function - called for each vertex
       void main() {
-        // Set vertex position in clip space
+        // Transform 2D position to 4D clip space coordinates
+        // position.xy = input coordinates, z = 0.0 (no depth), w = 1.0 (homogeneous coordinate)
         gl_Position = vec4(position, 0.0, 1.0);
       }
     `
 
     const fragmentShaderSource = `
-      // Set medium precision for floats
+      // Set floating point precision to medium for performance balance
       precision mediump float;
       
-      // Uniforms equivalent to Shadertoy's built-in variables
-      uniform float iTime;        // Time in seconds
-      uniform vec2 iResolution;   // Screen resolution
+      // Uniform variables passed from JavaScript
+      uniform float iTime;        // Current time in seconds since start
+      uniform vec2 iResolution;   // Canvas resolution in pixels (width, height)
       
-      // Shadertoy-style defines for compatibility
-      #define t iTime
-      #define r iResolution.xy
+      // Macro definitions for shorter variable names (Shadertoy compatibility)
+      #define t iTime             // Shorthand for time
+      #define r iResolution.xy    // Shorthand for resolution
       
-      // Main fragment shader function (adapted from Shadertoy)
+      // Main rendering function that generates the light effect
       void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-        vec3 c;  // Color accumulator
-        float l, z = t;  // Length and time offset
+        // Initialize color accumulator for RGB channels
+        vec3 c;
+        // Distance from center and time offset variable
+        float l, z = t;
         
-        // Create three color channels with slight variations
+        // Loop through RGB color channels to create layered effect
         for(int i = 0; i < 3; i++) {
-          vec2 uv, p = fragCoord.xy / r;  // Normalize coordinates
-          uv = p;
-          p -= 0.5;  // Center coordinates
-          p.x *= r.x / r.y;  // Correct aspect ratio
-          z += 0.07;  // Time offset for each channel
-          l = length(p);  // Distance from center
+          // UV coordinates and normalized pixel position
+          vec2 uv, p = fragCoord.xy / r;  // Convert pixel coords to 0-1 range
+          uv = p;                         // Copy normalized coordinates
+          p -= 0.5;                       // Center coordinates around origin (-0.5 to 0.5)
+          p.x *= r.x / r.y;              // Correct for aspect ratio to prevent stretching
+          z += 0.07;                      // Add time offset for each color channel
+          l = length(p);                  // Calculate distance from center point
           
-          // Create rippling distortion effect
-          // sin(z)+1 creates oscillation, abs(sin(l*9.-z-z)) creates radial waves
+          // Create dynamic rippling distortion effect
+          // sin(z)+1: oscillates between 0-2, controls overall intensity
+          // l*9.0: creates 9 concentric rings
+          // abs(sin(...)): creates positive wave pattern
+          // p/l: normalizes direction vector from center
           uv += p / l * (sin(z) + 1.0) * abs(sin(l * 9.0 - z - z));
           
-          // Generate bright spots using modulo and distance
+          // Generate bright light spots using distance field technique
+          // mod(uv, 1.0): creates repeating pattern every 1 unit
+          // - 0.5: centers each cell around origin
+          // length(...): distance to nearest cell center
+          // 0.01/distance: creates bright spots (inverse distance)
           c[i] = 0.01 / length(mod(uv, 1.0) - 0.5);
         }
         
-        // Output final color with time-based alpha
+        // Output final color: RGB from color accumulator divided by distance
+        // Alpha channel uses time for additional animation effect
         fragColor = vec4(c / l, t);
       }
       
+      // Fragment shader entry point
       void main() {
-        // Call mainImage with gl_FragCoord as input
+        // Call main rendering function with built-in fragment coordinate
         mainImage(gl_FragColor, gl_FragCoord.xy);
       }
     `
