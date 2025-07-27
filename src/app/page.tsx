@@ -32,6 +32,11 @@ export default function Home() {
       name: "Ripples",
       url: "arts/ripples",
     },
+    {
+      id: 8,
+      name: "Ring",
+      url: "arts/ring",
+    },
   ]
   return (
     <main className="font-sans h-[100dvh] flex items-center justify-center bg-white p-8">
