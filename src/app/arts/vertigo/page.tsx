@@ -54,7 +54,22 @@ export default function RingPage() {
   return (
     <>
       <h1 className="text-sm font-mono font-bold mb-4">vertigo</h1>
-      <div className="w-80 h-80 xl:w-100 xl:h-100 border border-black">
+      <div className="w-80 h-80 relative xl:w-100 xl:h-100 border border-black">
+        {!isPlaying &&
+          <div className='absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm'>
+            <div className='flex flex-col gap-3  items-center  h-fit whitespace-nowrap'>
+              <p className="text-xs">光敏性癫痫警告
+                / Photo-sensitive Epilepsy Warning
+              </p>
+              <button
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="text-xs underline cursor-pointer hover:opacity-60"
+              >
+                {isPlaying ? '暂停 / Pause' : '播放 / Play'}
+              </button>
+            </div>
+          </div>
+        }
         <canvas
           ref={canvasRef}
           className="w-full h-full"
@@ -67,19 +82,6 @@ export default function RingPage() {
         />
       </div>
       <div className='flex flex-col items-center gap-2'>
-        {!isPlaying &&
-          <div className='flex gap-3  items-center  h-fit whitespace-nowrap'>
-            <p className="text-xs">光敏性癫痫警告
-              / Photo-sensitive Epilepsy Warning
-            </p>
-            <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="text-xs underline cursor-pointer hover:opacity-60"
-            >
-              {isPlaying ? '暂停 / Pause' : '播放 / Play'}
-            </button>
-          </div>
-        }
         <p className="text-xs">眩晕 / vertigo</p>
       </div>
     </>
@@ -175,60 +177,52 @@ class RingRenderer {
         float ringInterval = 0.8;       // 圆环生成间隔
         
         // 创建多个扩散的圆环 - 真正的无限循环
-        for(int ringIndex = 0; ringIndex < 50; ringIndex++) {
+        for(int ringIndex = 0; ringIndex < 5; ringIndex++) {
           // 使用模运算实现真正的无限循环
-          float cycleTime = mod(t, 50.0 * ringInterval);
+          float cycleTime = mod(t, 5.0 * ringInterval);
           float ringTime = cycleTime - float(ringIndex) * ringInterval;
           
           // 处理负时间的情况，让圆环在周期内循环
           if(ringTime < 0.0) {
-            ringTime += 50.0 * ringInterval;
+            ringTime += 5.0 * ringInterval;
           }
           
           // 只渲染在当前周期内的圆环
           if(ringTime > 0.0 && ringTime < 5.0 * ringInterval) {
-            // 圆环半径随时间增长
+            // 预计算圆环级别的参数，避免在RGB循环中重复计算
             float ringRadius = ringTime * animationSpeed;
-            
-            // 圆环透明度随时间衰减
             float alpha = exp(-ringTime * 0.8);
+            float dispersionStrength = ringTime * 1.2;
+            float ringWidth = baseRingWidth * (1.0 + ringRadius * 0.3);
+            float glowWidth = ringWidth * 4.0;
+            float glowIntensity = 0.5;
             
             // 循环遍历RGB颜色通道以创建分层效果
             for(int i = 0; i < 3; i++) {
-              // 色散强度随时间增强 - 圆环越老，色散越强烈
-              float dispersionStrength = ringTime * 1.2;
-              
               // 为每个颜色通道添加随时间增强的偏移
               float baseOffset = float(i - 1) * 0.006; // 中心化偏移
               float radiusOffset = baseOffset * (1.0 + dispersionStrength);
               float currentRadius = ringRadius + radiusOffset;
               
-              // 圆环宽度随半径增大而增大
-              float ringWidth = baseRingWidth * (1.0 + ringRadius * 0.3);
-              
               // 使用距离场技术生成圆环
               float ring = 1.0 - smoothstep(0.0, ringWidth, abs(dist - currentRadius));
-              
-              // 应用透明度衰减
-              ring *= alpha;
               
               // 颜色强度随色散增强而变化
               float colorIntensity = 0.7 + 0.3 * (1.0 + dispersionStrength * 0.8);
               float colorVariation = colorIntensity + 0.2 * sin(ringTime * 3.0 + float(i) * 2.0);
-              ring *= colorVariation;
+              
+              // 应用透明度衰减和颜色变化
+              ring *= alpha * colorVariation;
               
               // Add glow effect - create a softer, larger ring around the main ring
               float glowRadius = currentRadius;
-              float glowWidth = ringWidth * 3.0; // Glow is 3x wider than main ring
-              float glowIntensity = 0.8; // Glow is softer
               
               // Create glow using exponential falloff for smoother effect
               float glowDistance = abs(dist - glowRadius);
               float glow = glowIntensity * exp(-glowDistance / (glowWidth * 0.5));
               
               // Apply same transparency and color variation to glow
-              glow *= alpha * 0.6; // Glow is slightly more transparent
-              glow *= colorVariation * 0.8; // Glow has slightly muted colors
+              glow *= alpha * 0.9 * colorVariation * 0.8;
               
               // Combine main ring and glow
               float totalEffect = ring + glow;
