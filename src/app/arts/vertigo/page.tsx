@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Separator } from '@/components/ui/separator'
 /**
  * Ring animation component using WebGL shaders
  * Creates a thin ring effect with RGB layering and distance field techniques
@@ -57,13 +56,16 @@ export default function RingPage() {
       <div className="w-80 h-80 relative xl:w-100 xl:h-100 border border-black">
         {!isPlaying &&
           <div className='absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm'>
-            <div className='flex flex-col gap-3  items-center  h-fit whitespace-nowrap'>
+            <div className='flex flex-col gap-3  items-center h-fit w-full'>
               <p className="text-xs">光敏性癫痫警告
                 / Photo-sensitive Epilepsy Warning
               </p>
+              <p className="text-xs w-full">
+                闪烁或强光可能诱发癫痫，请谨慎使用<br/>Flashing lights or rapid visuals may trigger seizures—use caution
+              </p>
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
-                className="text-xs underline cursor-pointer hover:opacity-60"
+                className="text-xs underline cursor-pointer hover:opacity-60 mt-5"
               >
                 {isPlaying ? '暂停 / Pause' : '播放 / Play'}
               </button>
@@ -150,7 +152,7 @@ class RingRenderer {
 
     const fragmentShaderSource = `
       // 设置浮点数精度为中等，平衡性能和质量
-      precision mediump float;
+      precision lowp float;
       
       // 从JavaScript传入的uniform变量
       uniform float iTime;        // 从开始到现在的时间（秒）
@@ -195,7 +197,7 @@ class RingRenderer {
             float dispersionStrength = ringTime * 1.2;
             float ringWidth = baseRingWidth * (1.0 + ringRadius * 0.3);
             float glowWidth = ringWidth * 4.0;
-            float glowIntensity = 0.5;
+            float glowIntensity = 0.9;
             
             // 循环遍历RGB颜色通道以创建分层效果
             for(int i = 0; i < 3; i++) {
