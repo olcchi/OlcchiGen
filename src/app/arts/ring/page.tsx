@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-
+import { useEffect, useRef, useState } from 'react'
+import {Separator} from '@/components/ui/separator'
 /**
  * Ring animation component using WebGL shaders
  * Creates a thin ring effect with RGB layering and distance field techniques
@@ -10,6 +10,7 @@ export default function RingPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>(0)
   const rendererRef = useRef<RingRenderer | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -26,7 +27,11 @@ export default function RingPage() {
 
     // Start animation loop
     const animate = () => {
-      renderer.render()
+      if (isPlaying) {
+        renderer.render()
+      } else {
+        renderer.renderStatic()
+      }
       animationRef.current = requestAnimationFrame(animate)
     }
     animate()
@@ -44,11 +49,11 @@ export default function RingPage() {
       window.removeEventListener('resize', handleResize)
       renderer.dispose()
     }
-  }, [])
+  }, [isPlaying])
 
   return (
     <>
-      <h1 className="text-sm font-mono font-bold mb-4">Ring</h1>
+      <h1 className="text-sm font-mono font-bold mb-4">vertigo</h1>
       <div className="w-80 h-80 xl:w-100 xl:h-100 border border-black">
         <canvas
           ref={canvasRef}
@@ -62,8 +67,19 @@ export default function RingPage() {
         />
       </div>
       <div className='flex flex-col items-center gap-2'>
-        <p className="text-xs text-gray-600 mt-2">Thin ring with RGB layering and distance field</p>
-        <div className="h-12"></div>
+        {!isPlaying && (
+          <div className='flex gap-3 items-center h-3'>
+        <p className="text-xs">此动画包含快速闪烁效果，可能引发光敏性癫痫发作</p>
+        <Separator className='bg-black'  orientation="vertical" />
+        <button
+          onClick={() => setIsPlaying(!isPlaying)}
+          className="text-xs underline"
+        >
+          {isPlaying ? '暂停 / Pause' : '播放 / Play'}
+        </button>
+        </div>
+        )}
+        <p className="text-xs text-gray-600 mt-1">眩晕 / feeling vertigo</p>
       </div>
     </>
   )
@@ -86,7 +102,7 @@ class RingRenderer {
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
     this.startTime = Date.now()
-    
+
     // Get WebGL context
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
     if (!gl) {
@@ -294,9 +310,9 @@ class RingRenderer {
     // Fullscreen quad vertices (two triangles)
     const vertices = new Float32Array([
       -1, -1,  // Bottom left
-       1, -1,  // Bottom right
-      -1,  1,  // Top left
-       1,  1   // Top right
+      1, -1,  // Bottom right
+      -1, 1,  // Top left
+      1, 1   // Top right
     ])
 
     this.quadBuffer = this.gl.createBuffer()
@@ -340,6 +356,40 @@ class RingRenderer {
     // Set uniforms
     if (this.timeLocation) {
       this.gl.uniform1f(this.timeLocation, currentTime)
+    }
+    if (this.resolutionLocation) {
+      this.gl.uniform2f(this.resolutionLocation, this.canvas.width, this.canvas.height)
+    }
+
+    // Bind quad buffer and set up vertex attributes
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.quadBuffer)
+    const positionLocation = this.gl.getAttribLocation(this.program, 'position')
+    this.gl.enableVertexAttribArray(positionLocation)
+    this.gl.vertexAttribPointer(positionLocation, 2, this.gl.FLOAT, false, 0, 0)
+
+    // Draw the quad
+    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4)
+  }
+
+  /**
+   * Render a static frame (paused state)
+   */
+  renderStatic(): void {
+    if (!this.program) return
+
+    // Use a fixed time for static rendering
+    const staticTime = 0.0
+
+    // Clear the canvas
+    this.gl.clearColor(0, 0, 0, 1)
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT)
+
+    // Use shader program
+    this.gl.useProgram(this.program)
+
+    // Set uniforms with static time
+    if (this.timeLocation) {
+      this.gl.uniform1f(this.timeLocation, staticTime)
     }
     if (this.resolutionLocation) {
       this.gl.uniform2f(this.resolutionLocation, this.canvas.width, this.canvas.height)
