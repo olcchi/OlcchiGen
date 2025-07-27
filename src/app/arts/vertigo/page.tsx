@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import {Separator} from '@/components/ui/separator'
+import { Separator } from '@/components/ui/separator'
 /**
  * Ring animation component using WebGL shaders
  * Creates a thin ring effect with RGB layering and distance field techniques
@@ -67,19 +67,20 @@ export default function RingPage() {
         />
       </div>
       <div className='flex flex-col items-center gap-2'>
-        {!isPlaying && (
-          <div className='flex gap-3 items-center h-3'>
-        <p className="text-xs">此动画包含快速闪烁效果，可能引发光敏性癫痫发作</p>
-        <Separator className='bg-black'  orientation="vertical" />
-        <button
-          onClick={() => setIsPlaying(!isPlaying)}
-          className="text-xs underline"
-        >
-          {isPlaying ? '暂停 / Pause' : '播放 / Play'}
-        </button>
-        </div>
-        )}
-        <p className="text-xs text-gray-600 mt-1">眩晕 / feeling vertigo</p>
+        {!isPlaying &&
+          <div className='flex gap-3  items-center  h-fit whitespace-nowrap'>
+            <p className="text-xs">光敏性癫痫警告
+              / Photo-sensitive Epilepsy Warning
+            </p>
+            <button
+              onClick={() => setIsPlaying(!isPlaying)}
+              className="text-xs underline cursor-pointer hover:opacity-60"
+            >
+              {isPlaying ? '暂停 / Pause' : '播放 / Play'}
+            </button>
+          </div>
+        }
+        <p className="text-xs">眩晕 / vertigo</p>
       </div>
     </>
   )

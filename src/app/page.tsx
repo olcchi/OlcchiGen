@@ -34,8 +34,8 @@ export default function Home() {
     },
     {
       id: 7,
-      name: "Ring",
-      url: "arts/ring",
+      name: "Vertigo",
+      url: "arts/vertigo",
     },
   ]
   return (
