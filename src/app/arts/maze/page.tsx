@@ -13,7 +13,7 @@ export default function Maze() {
   const [zoomValue, setZoomValue] = useState([1.0]);
   const zoomLevelRef = useRef(1.0);
   const updateOrthographicProjectionRef = useRef<(() => void) | null>(null);
-  
+
   // Entrance animation state
   const animationStartTimeRef = useRef<number>(0);
   const isAnimatingRef = useRef(true);
@@ -86,14 +86,14 @@ export default function Maze() {
           if (container) {
             const rect = container.getBoundingClientRect();
             const aspectRatio = rect.width / rect.height;
-            
+
             // Base size adjusted for larger viewing area
             const baseSize = 300 / zoomLevelRef.current;
-            
+
             // Adjust for aspect ratio to prevent clipping
             const orthoWidth = baseSize * Math.max(1, aspectRatio);
             const orthoHeight = baseSize * Math.max(1, 1 / aspectRatio);
-            
+
             p.ortho(-orthoWidth, orthoWidth, -orthoHeight, orthoHeight, -Number.MAX_VALUE, Number.MAX_VALUE);
           } else {
             // Fallback for default canvas size
@@ -124,7 +124,7 @@ export default function Maze() {
           if (stepCounter >= stepsBeforeTurn) {
             // Add current position as a key point (end of current segment)
             keyPoints.push({ ...headPosition });
-            
+
             // Filter out the opposite direction to avoid going backwards
             const oppositeDirection = { x: -direction.x, y: -direction.y, z: -direction.z };
             const validDirections = possibleDirections.filter(dir =>
@@ -136,7 +136,7 @@ export default function Maze() {
             direction = { ...validDirections[randomIndex] };
 
             stepCounter = 0;
-            
+
             // Keep all segments for complete trail history
           }
 
@@ -156,7 +156,7 @@ export default function Maze() {
           // Draw line segments connecting key points
           p.beginShape();
           p.noFill();
-          
+
           // Draw all key points
           for (let i = 0; i < keyPoints.length; i++) {
             const point = keyPoints[i];
@@ -166,7 +166,7 @@ export default function Maze() {
             const relativeZ = point.z - headPosition.z;
             p.vertex(relativeX, relativeY, relativeZ);
           }
-          
+
           // Draw current segment from last key point to current head position
           if (keyPoints.length > 0) {
             const relativeX = 0; // Head is always at origin
@@ -174,7 +174,7 @@ export default function Maze() {
             const relativeZ = 0;
             p.vertex(relativeX, relativeY, relativeZ);
           }
-          
+
           p.endShape();
         };
 
@@ -191,16 +191,16 @@ export default function Maze() {
             const currentTime = p.millis();
             const elapsed = currentTime - animationStartTimeRef.current;
             const progress = Math.min(elapsed / animationDuration, 1);
-            
+
             // Apply easing to the progress
             const easedProgress = easeOut(progress);
-            
+
             // Interpolate zoom value
             const currentZoom = startZoom + (targetZoom - startZoom) * easedProgress;
             zoomLevelRef.current = currentZoom;
             setZoomValue([currentZoom]);
             updateOrthographicProjection();
-            
+
             // End animation when complete
             if (progress >= 1) {
               isAnimatingRef.current = false;
@@ -231,7 +231,7 @@ export default function Maze() {
           if (isAnimatingRef.current) {
             return false;
           }
-          
+
           // Handle mouse wheel zoom
           const delta = event.delta;
           if (delta > 0) {
