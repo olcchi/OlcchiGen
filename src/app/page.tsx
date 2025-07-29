@@ -37,6 +37,11 @@ export default function Home() {
       name: "Vertigo",
       url: "arts/vertigo",
     },
+    {
+      id: 8,
+      name: "Bubble",
+      url: "arts/bubble",
+    },
   ]
   return (
     <main className="font-sans h-[100dvh] flex items-center justify-center bg-white p-8">
