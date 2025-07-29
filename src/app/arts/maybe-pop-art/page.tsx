@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Dices } from 'lucide-react'
 
-export default function Bubble() {
+export default function MaybePopArt() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     // Canvas configuration constants
@@ -312,7 +312,7 @@ export default function Bubble() {
     return (
         <>
             {/* Component title */}
-            <h1 className="text-sm font-mono font-bold mb-4">Bubble</h1>
+            <h1 className="text-sm font-mono font-bold mb-4">Maybe Pop art</h1>
 
             {/* Canvas container */}
             <div className="w-80 h-80 xl:w-100 xl:h-100 border border-black">
@@ -326,7 +326,7 @@ export default function Bubble() {
 
             {/* Description text */}
             <p className="text-xs">
-                也许是波普 / Maybe bubble
+                也许是波普 / Maybe Pop art
             </p>
             <button
                 className="text-xs flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity"

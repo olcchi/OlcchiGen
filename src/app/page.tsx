@@ -39,8 +39,8 @@ export default function Home() {
     },
     {
       id: 8,
-      name: "Bubble",
-      url: "arts/bubble",
+      name: "Maybe pop art",
+      url: "arts/maybe-pop-art",
     },
   ]
   return (
