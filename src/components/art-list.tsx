@@ -17,7 +17,7 @@ interface ArtListProps {
  */
 export function ArtList({ arts, className = "" }: ArtListProps) {
   return (
-    <ScrollArea className={`h-72 w-48 font-mono ${className}`}>
+    <ScrollArea className={`h-fit w-48 font-mono ${className}`}>
       {arts.map((art, index) => (
         <React.Fragment key={`${art.name}-${art.url}`}>
           <div className="text-xs font-mono font-bold px-2"><a className="hover:opacity-40 transition-opacity ease-in-out duration-500" href={art.url}>{index + 1}.{art.name}</a></div>
